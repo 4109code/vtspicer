@@ -12,7 +12,7 @@ export function countGuidePoints(guides) {
   return (guides || []).reduce((n, g) => n + (g.points?.length || 0), 0);
 }
 
-export function guidesToTargets(guides, eg2 = 0) {
+function guidesToTargets(guides, eg2 = 0) {
   const targets = [];
   for (const g of guides || []) {
     for (const pt of g.points || []) {
@@ -27,12 +27,14 @@ export function guidesToTargets(guides, eg2 = 0) {
   return targets;
 }
 
-export function fitParamsToGuides(modelId, type, params, guides, eg2 = 0, opts = {}) {
+export function fitParamsToGuides(modelId, type, params, guides, eg2 = 0) {
   const targets = guidesToTargets(guides, eg2);
-  if (targets.length < 2) return { ...params, _fitMeta: { ok: false, reason: 'need ≥2 points' } };
+  if (targets.length < 2) {
+    return { params, meta: { ok: false, reason: 'need ≥2 points' } };
+  }
   const next = fitToTargets(modelId, type, params, targets, {
-    iterations: opts.iterations ?? 90,
-    damping: opts.damping ?? 0.45,
+    iterations: 90,
+    damping: 0.45,
   });
   let err = 0;
   for (const t of targets) {
@@ -40,8 +42,8 @@ export function fitParamsToGuides(modelId, type, params, guides, eg2 = 0, opts =
     err += (ip - t.ip) ** 2;
   }
   return {
-    ...next,
-    _fitMeta: {
+    params: next,
+    meta: {
       ok: true,
       points: targets.length,
       rms: Math.sqrt(err / targets.length),
@@ -49,11 +51,15 @@ export function fitParamsToGuides(modelId, type, params, guides, eg2 = 0, opts =
   };
 }
 
-export function addGuidePoint(guides, vg, vp, ip) {
-  const list = (guides || []).map((g) => ({
+export function cloneGuides(guides) {
+  return (guides || []).map((g) => ({
     vg: g.vg,
     points: g.points.map((p) => ({ ...p })),
   }));
+}
+
+export function addGuidePoint(guides, vg, vp, ip) {
+  const list = cloneGuides(guides);
   let curve = list.find((g) => Math.abs(g.vg - vg) < 1e-9);
   if (!curve) {
     curve = { vg, points: [] };
@@ -66,10 +72,7 @@ export function addGuidePoint(guides, vg, vp, ip) {
 }
 
 export function undoGuidePoint(guides, activeVg = null) {
-  const list = (guides || []).map((g) => ({
-    vg: g.vg,
-    points: g.points.map((p) => ({ ...p })),
-  }));
+  const list = cloneGuides(guides);
   if (!list.length) return list;
 
   let curve =

@@ -22,7 +22,6 @@ export class Plot {
     this.showScreenCurves = true;
     this.screenCurveColor = '#1d4ed8';
     this.guides = [];
-    this.hover = null;
     this.pad = { left: 56, right: 16, top: 16, bottom: 40 };
     /** @type {{ step: number, message: string }|null} */
     this.calibMode = null;
@@ -212,6 +211,25 @@ export class Plot {
     ctx.restore();
   }
 
+  strokePolyline(points) {
+    const ctx = this.ctx;
+    ctx.beginPath();
+    for (let i = 0; i < points.length; i++) {
+      if (i === 0) ctx.moveTo(points[i].x, points[i].y);
+      else ctx.lineTo(points[i].x, points[i].y);
+    }
+    ctx.stroke();
+  }
+
+  clampLabel(x, y, tw, th, margin = 8) {
+    const w = this.canvas.width;
+    const h = this.canvas.height;
+    return {
+      x: Math.min(Math.max(margin, x), w - tw - margin),
+      y: Math.min(Math.max(th + margin, y), h - margin),
+    };
+  }
+
   drawCurves() {
     const ctx = this.ctx;
     const w = this.canvas.width;
@@ -224,13 +242,7 @@ export class Plot {
     for (const curve of this.curves) {
       const pts = curve.points;
       if (!pts.length) continue;
-      ctx.beginPath();
-      for (let i = 0; i < pts.length; i++) {
-        const p = this.dataToPx(pts[i].vp, pts[i].ip);
-        if (i === 0) ctx.moveTo(p.x, p.y);
-        else ctx.lineTo(p.x, p.y);
-      }
-      ctx.stroke();
+      this.strokePolyline(pts.map((pt) => this.dataToPx(pt.vp, pt.ip)));
 
       const label = `${curve.vg} V`;
       const tw = this.measureLabel(label, font);
@@ -258,19 +270,14 @@ export class Plot {
         anchor = this.dataToPx(mid.vp, mid.ip);
       }
 
-      let x = anchor.x + 5;
-      let y = anchor.y - 5;
-      x = Math.min(Math.max(margin, x), w - tw - margin);
-      y = Math.min(Math.max(th + margin, y), h - margin);
-      this.drawLabel(label, x, y, { fill: this.curveColor, font });
+      const labelPos = this.clampLabel(anchor.x + 5, anchor.y - 5, tw, th, margin);
+      this.drawLabel(label, labelPos.x, labelPos.y, { fill: this.curveColor, font });
     }
   }
 
   drawScreenCurves() {
     if (!this.showScreenCurves || !this.screenCurves?.length) return;
     const ctx = this.ctx;
-    const w = this.canvas.width;
-    const h = this.canvas.height;
     const margin = 8;
     const font = '15px sans-serif';
     const color = this.screenCurveColor || '#1d4ed8';
@@ -283,13 +290,7 @@ export class Plot {
     for (const curve of this.screenCurves) {
       const pts = curve.points;
       if (!pts.length) continue;
-      ctx.beginPath();
-      for (let i = 0; i < pts.length; i++) {
-        const p = this.dataToPx(pts[i].vp, pts[i].ip);
-        if (i === 0) ctx.moveTo(p.x, p.y);
-        else ctx.lineTo(p.x, p.y);
-      }
-      ctx.stroke();
+      this.strokePolyline(pts.map((pt) => this.dataToPx(pt.vp, pt.ip)));
 
       const label = `${curve.vg} Ig2`;
       const tw = this.measureLabel(label, font);
@@ -297,12 +298,9 @@ export class Plot {
       const prefer = Math.floor(pts.length * 0.55);
       const mid = pts[prefer] || pts[pts.length - 1];
       if (!mid) continue;
-      let { x, y } = this.dataToPx(mid.vp, mid.ip);
-      x += 5;
-      y -= 5;
-      x = Math.min(Math.max(margin, x), w - tw - margin);
-      y = Math.min(Math.max(th + margin, y), h - margin);
-      this.drawLabel(label, x, y, { fill: color, font });
+      const anchor = this.dataToPx(mid.vp, mid.ip);
+      const labelPos = this.clampLabel(anchor.x + 5, anchor.y - 5, tw, th, margin);
+      this.drawLabel(label, labelPos.x, labelPos.y, { fill: color, font });
     }
     ctx.restore();
   }
@@ -322,12 +320,7 @@ export class Plot {
       ctx.setLineDash([7, 5]);
       ctx.strokeStyle = stroke;
       ctx.lineWidth = 2.25;
-      ctx.beginPath();
-      px.forEach((p, i) => {
-        if (i === 0) ctx.moveTo(p.x, p.y);
-        else ctx.lineTo(p.x, p.y);
-      });
-      ctx.stroke();
+      this.strokePolyline(px);
       ctx.setLineDash([]);
 
       for (const p of px) {
@@ -377,19 +370,11 @@ export class Plot {
 
   drawCalibModeChrome() {
     if (!this.calibMode) return;
-    const msgs = [
-      'Click on the graph 0 on the image',
-      'Click on the Vpmax',
-      'Click on the IpMax',
-    ];
-    const text = msgs[this.calibMode.step] || this.calibMode.message;
-    const ctx = this.ctx;
-    ctx.save();
-    ctx.font = 'bold 28px sans-serif';
-    ctx.fillStyle = '#8b1a1a';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(text, this.canvas.width / 2, this.canvas.height / 2);
-    ctx.restore();
+    this.drawLabel(this.calibMode.message, this.canvas.width / 2, this.canvas.height / 2, {
+      fill: '#8b1a1a',
+      font: 'bold 28px sans-serif',
+      align: 'center',
+      baseline: 'middle',
+    });
   }
 }

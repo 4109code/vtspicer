@@ -8,6 +8,7 @@ import {
   modelSupports,
   listModels,
   generateSubckt,
+  normalizeType,
 } from '/lib/tube.js';
 import { Plot } from './plot.js';
 import { Calibrator } from './calibrate.js';
@@ -17,8 +18,9 @@ import {
   fitParamsToGuides,
   countGuidePoints,
   hitGuidePoint,
+  cloneGuides,
 } from './draw-guides.js';
-import { createParamSliders, readCaps, writeCaps } from './ui.js';
+import { createParamSliders, readCaps, writeCaps, CAP_IDS } from './ui.js';
 
 const STORAGE_KEY = 'koren-tube-modeler-v2';
 
@@ -40,6 +42,8 @@ const calibrator = new Calibrator(plot, {
 
 let sliderApi = null;
 let rafPending = false;
+let paintOnly = false;
+let persistTimer = 0;
 let drag = null;
 let skipDrawClick = false;
 
@@ -75,22 +79,35 @@ function isMultiGrid() {
   return state.type === 'pentode';
 }
 
-function scheduleRedraw() {
+function queueFrame() {
   if (rafPending) return;
   rafPending = true;
   requestAnimationFrame(() => {
     rafPending = false;
-    redraw();
+    const paint = paintOnly;
+    paintOnly = false;
+    if (paint) {
+      plot.guides = state.guides;
+      plot.draw();
+    } else {
+      redraw();
+    }
   });
 }
 
+function scheduleRedraw() {
+  paintOnly = false;
+  queueFrame();
+}
+
+function schedulePaint() {
+  if (rafPending && !paintOnly) return;
+  if (!rafPending) paintOnly = true;
+  queueFrame();
+}
+
 function redraw() {
-  let vgList;
-  try {
-    vgList = parseVgList($('vgList').value);
-  } catch {
-    vgList = [0];
-  }
+  const vgList = parseVgList($('vgList').value);
 
   plot.calib.vpMax = Number($('vpMax').value) || 400;
   plot.calib.ipMax = readIpMaxA();
@@ -165,20 +182,18 @@ function updateDrawStatus(extra = '') {
 
 function runGuideFit() {
   const eg2 = Number($('eg2').value) || 300;
-  const result = fitParamsToGuides(
+  const { params, meta } = fitParamsToGuides(
     state.modelId,
     state.type,
     state.params,
     state.guides,
     eg2,
   );
-  const meta = result._fitMeta;
-  delete result._fitMeta;
-  if (!meta?.ok) {
-    updateDrawStatus(meta?.reason || 'Need at least 2 guide points.');
+  if (!meta.ok) {
+    updateDrawStatus(meta.reason || 'Need at least 2 guide points.');
     return;
   }
-  setParams(result);
+  setParams(params);
   const rmsMa = (meta.rms * 1000).toFixed(3);
   updateDrawStatus(`Fitted ${meta.points} points · RMS ${rmsMa} mA.`);
 }
@@ -223,12 +238,7 @@ function switchModel(modelId, { resetParams = true } = {}) {
   updateTypeOptions();
   if (resetParams) {
     const next = defaultParams(modelId, state.type);
-    const caps = {
-      RGI: state.params.RGI,
-      CCG: state.params.CCG,
-      CGP: state.params.CGP,
-      CCP: state.params.CCP,
-    };
+    const caps = Object.fromEntries(CAP_IDS.map((id) => [id, state.params[id]]));
     state.params = { ...next, ...caps };
     writeCaps(state.params);
   } else {
@@ -248,7 +258,7 @@ function applyPreset(preset) {
   state.modelId = modelId;
   $('modelSelect').value = modelId;
   state.name = preset.name;
-  state.type = preset.type === 'tetrode' ? 'pentode' : preset.type;
+  state.type = normalizeType(preset.type);
   $('tubeName').value = preset.name;
   updateTypeOptions();
   $('tubeType').value = preset.type;
@@ -269,6 +279,19 @@ function applyPreset(preset) {
 }
 
 function persist() {
+  clearTimeout(persistTimer);
+  persistTimer = setTimeout(writePersist, 200);
+}
+
+function flushPersist() {
+  if (!persistTimer) return;
+  clearTimeout(persistTimer);
+  persistTimer = 0;
+  writePersist();
+}
+
+function writePersist() {
+  persistTimer = 0;
   try {
     const payload = {
       modelId: state.modelId,
@@ -306,7 +329,7 @@ function restore() {
       state.name = data.name;
       $('tubeName').value = data.name;
     }
-    if (data.type) state.type = data.type === 'tetrode' ? 'pentode' : data.type;
+    if (data.type) state.type = normalizeType(data.type);
     $('modelSelect').value = state.modelId;
     updateTypeOptions();
     $('tubeType').value = state.type;
@@ -397,7 +420,7 @@ function bindUi() {
     persist();
   });
 
-  for (const id of ['CCG', 'CGP', 'CCP', 'RGI']) {
+  for (const id of CAP_IDS) {
     $(id).addEventListener('change', () => {
       updateSpice();
       persist();
@@ -488,6 +511,8 @@ function bindUi() {
     URL.revokeObjectURL(a.href);
   });
 
+  window.addEventListener('pagehide', flushPersist);
+
   canvas.addEventListener('pointerdown', onPointerDown);
   canvas.addEventListener('pointermove', onPointerMove);
   canvas.addEventListener('pointerup', onPointerUp);
@@ -524,7 +549,6 @@ function onPointerDown(evt) {
   if (hit) {
     skipDrawClick = true;
     drag = {
-      kind: 'guide',
       gi: hit.gi,
       pi: hit.pi,
       moved: false,
@@ -539,13 +563,10 @@ function onPointerMove(evt) {
   const data = plot.pxToData(local.x, local.y);
   $('cursorReadout').textContent = `Vp=${data.vp.toFixed(1)} V, Ip=${(data.ip * 1000).toFixed(3)} mA`;
 
-  if (!drag || drag.kind !== 'guide') return;
+  if (!drag) return;
 
   drag.moved = true;
-  const guides = state.guides.map((g) => ({
-    vg: g.vg,
-    points: g.points.map((p) => ({ ...p })),
-  }));
+  const guides = cloneGuides(state.guides);
   const curve = guides[drag.gi];
   if (!curve) return;
   curve.points[drag.pi] = { vp: data.vp, ip: Math.max(0, data.ip) };
@@ -562,19 +583,15 @@ function onPointerMove(evt) {
   drag.pi = bestPi;
   state.guides = guides;
   plot.guides = guides;
-  plot.draw();
+  schedulePaint();
 }
 
 function onPointerUp() {
-  if (drag?.kind === 'guide') {
-    const moved = drag.moved;
-    drag = null;
-    if (moved) {
-      setGuides(state.guides, { fit: true });
-    }
-    return;
-  }
+  if (!drag) return;
+  const moved = drag.moved;
   drag = null;
+  if (moved) setGuides(state.guides, { fit: true });
+  flushPersist();
 }
 
 function refreshPresetOptions() {

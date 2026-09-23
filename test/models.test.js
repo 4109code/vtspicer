@@ -17,31 +17,20 @@ describe('model registry', () => {
 });
 
 describe('ayumi / immler plate current', () => {
-  it('ayumi triode conducts near 12AX7 region', () => {
-    const p = getModel('ayumi').defaults.triode;
-    const ip = plateCurrent('ayumi', 'triode', -1, 250, 0, p);
-    assert.ok(ip > 0, `ip=${ip}`);
-  });
+  for (const id of ['ayumi', 'immler']) {
+    it(`${id} triode conducts near 12AX7 region`, () => {
+      const p = getModel(id).defaults.triode;
+      const ip = plateCurrent(id, 'triode', -1, 250, 0, p);
+      assert.ok(ip > 0, `ip=${ip}`);
+    });
 
-  it('immler triode conducts near 12AX7 region', () => {
-    const p = getModel('immler').defaults.triode;
-    const ip = plateCurrent('immler', 'triode', -1, 250, 0, p);
-    assert.ok(ip > 0, `ip=${ip}`);
-  });
-
-  it('ayumi pentode rises with Ep', () => {
-    const p = getModel('ayumi').defaults.pentode;
-    const low = plateCurrent('ayumi', 'pentode', 0, 20, 300, p);
-    const high = plateCurrent('ayumi', 'pentode', 0, 300, 300, p);
-    assert.ok(high > low);
-  });
-
-  it('immler pentode rises with Ep', () => {
-    const p = getModel('immler').defaults.pentode;
-    const low = plateCurrent('immler', 'pentode', 0, 20, 300, p);
-    const high = plateCurrent('immler', 'pentode', 0, 300, 300, p);
-    assert.ok(high > low);
-  });
+    it(`${id} pentode rises with Ep`, () => {
+      const p = getModel(id).defaults.pentode;
+      const low = plateCurrent(id, 'pentode', 0, 20, 300, p);
+      const high = plateCurrent(id, 'pentode', 0, 300, 300, p);
+      assert.ok(high > low);
+    });
+  }
 
   it('screen current is positive for koren/ayumi/immler pentodes', () => {
     for (const id of ['koren', 'ayumi', 'immler']) {

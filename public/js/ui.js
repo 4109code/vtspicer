@@ -8,11 +8,8 @@
 const SLIDER_MAX = 1000;
 
 function decimalsFor(key, lim) {
-  if (key === 'EX' || key === 'XS' || key === 'VCT' || key === 'ALPHA' || key === 'CDO' || key === 'KP') return 4;
-  if (key === 'MUR' || key === 'RAP' || key === 'RAD') return 4;
-  if (key === 'G' || key === 'EMC' || key === 'GLIM' || key === 'LIF') return 6;
-  if (lim && lim.max <= 5) return 4;
-  if (key === 'MU' || key === 'MUC' || key === 'MUM') return 2;
+  if (key === 'G' || key === 'GLIM') return 6;
+  if (key === 'KP' || (lim && lim.max <= 5)) return 4;
   return 2;
 }
 
@@ -227,18 +224,14 @@ export function createParamSliders(container, model, params, onChange) {
   };
 }
 
+export const CAP_IDS = ['CCG', 'CGP', 'CCP', 'RGI'];
+
 export function readCaps() {
-  return {
-    CCG: Number(document.getElementById('CCG').value),
-    CGP: Number(document.getElementById('CGP').value),
-    CCP: Number(document.getElementById('CCP').value),
-    RGI: Number(document.getElementById('RGI').value),
-  };
+  return Object.fromEntries(CAP_IDS.map((id) => [id, Number(document.getElementById(id).value)]));
 }
 
 export function writeCaps(p) {
-  if (p.CCG != null) document.getElementById('CCG').value = p.CCG;
-  if (p.CGP != null) document.getElementById('CGP').value = p.CGP;
-  if (p.CCP != null) document.getElementById('CCP').value = p.CCP;
-  if (p.RGI != null) document.getElementById('RGI').value = p.RGI;
+  for (const id of CAP_IDS) {
+    if (p[id] != null) document.getElementById(id).value = p[id];
+  }
 }

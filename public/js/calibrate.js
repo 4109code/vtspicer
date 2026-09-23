@@ -15,7 +15,6 @@ export class Calibrator {
     this.onChange = onChange || (() => {});
     this.active = false;
     this.step = 0;
-    this.message = '';
   }
 
   start() {
@@ -60,7 +59,6 @@ export class Calibrator {
   }
 
   _set(msg) {
-    this.message = msg;
     this.plot.calibMode = this.active
       ? { step: this.step, message: msg }
       : null;

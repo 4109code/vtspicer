@@ -1,16 +1,8 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import {
-  softplus,
-  triodeIp,
-  pentodeIp,
-  screenIg2,
-  parseVgList,
-  curveFamily,
-  clampParams,
-  inverseFitStep,
-} from '../lib/koren.js';
-import { generateSubckt } from '../lib/spice.js';
+import { softplus, parseVgList } from '../lib/models/math.js';
+import { triodeIp, pentodeIp, screenIg2 } from '../lib/models/koren.js';
+import { curveFamily, clampParams, generateSubckt } from '../lib/tube.js';
 
 describe('softplus', () => {
   it('matches log1p(exp(x)) in the middle range', () => {
@@ -80,6 +72,7 @@ describe('parseVgList', () => {
 describe('curveFamily', () => {
   it('returns one curve per Vg', () => {
     const curves = curveFamily(
+      'koren',
       'triode',
       { MU: 100, EX: 1.4, KG1: 1060, KP: 600, KVB: 300 },
       { vgList: [0, -1], vpMax: 100, vpSteps: 11 },
@@ -89,24 +82,9 @@ describe('curveFamily', () => {
   });
 });
 
-describe('inverseFitStep', () => {
-  it('moves KG1 to reduce residual at a sample point', () => {
-    const p0 = { MU: 100, EX: 1.4, KG1: 2000, KP: 600, KVB: 300, VCT: 0 };
-    const eg = 0;
-    const ep = 250;
-    const target = triodeIp(eg, ep, { ...p0, KG1: 1060 });
-    let p = { ...p0 };
-    for (let i = 0; i < 40; i++) {
-      p = inverseFitStep('triode', p, eg, ep, 0, target, ['KG1'], 0.8);
-    }
-    const ip = triodeIp(eg, ep, p);
-    assert.ok(Math.abs(ip - target) / target < 0.05, `ip=${ip} target=${target} KG1=${p.KG1}`);
-  });
-});
-
 describe('clampParams', () => {
   it('clamps out-of-range values', () => {
-    const c = clampParams({ MU: 1000, EX: 0.5, KG1: 1060, KP: 600, KVB: 300 });
+    const c = clampParams('koren', { MU: 1000, EX: 0.5, KG1: 1060, KP: 600, KVB: 300 });
     assert.equal(c.MU, 200);
     assert.equal(c.EX, 1.0);
   });

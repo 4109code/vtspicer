@@ -8,8 +8,8 @@
 const SLIDER_MAX = 1000;
 
 function decimalsFor(key, lim) {
-  if (key === 'G' || key === 'GLIM') return 6;
-  if (key === 'KP' || (lim && lim.max <= 5)) return 4;
+  if (key === 'G' || key === 'GLIM' || key === 'K') return 6;
+  if (key === 'KP' || (lim && lim.max <= 5)) return 6;
   return 2;
 }
 
@@ -26,6 +26,7 @@ export function createParamSliders(container, model, params, onChange) {
   const limits = model.limits;
   const logSet = new Set(model.logParams || []);
   const multiSet = new Set(model.multiGridParams || []);
+  const enums = model.enumParams || {};
 
   function usesLog(key) {
     return logSet.has(key) && limits[key].min > 0;
@@ -34,6 +35,21 @@ export function createParamSliders(container, model, params, onChange) {
   function clamp(key, v) {
     const lim = limits[key];
     return Math.min(lim.max, Math.max(lim.min, v));
+  }
+
+  function snapEnum(key, v) {
+    const options = enums[key];
+    if (!options?.length) return clamp(key, v);
+    let best = options[0].value;
+    let bestD = Infinity;
+    for (const opt of options) {
+      const d = Math.abs(opt.value - v);
+      if (d < bestD) {
+        bestD = d;
+        best = opt.value;
+      }
+    }
+    return best;
   }
 
   function valueToSlider(key, value) {
@@ -143,6 +159,25 @@ export function createParamSliders(container, model, params, onChange) {
     const lab = document.createElement('span');
     lab.textContent = key;
 
+    if (enums[key]) {
+      const sel = document.createElement('select');
+      sel.title = 'Plate knee shape';
+      for (const opt of enums[key]) {
+        const o = document.createElement('option');
+        o.value = String(opt.value);
+        o.textContent = opt.label;
+        sel.appendChild(o);
+      }
+      sel.value = String(snapEnum(key, params[key] ?? enums[key][0].value));
+      sel.addEventListener('change', () => {
+        onChange(key, snapEnum(key, Number(sel.value)));
+      });
+      row.append(lab, sel);
+      container.appendChild(row);
+      controls[key] = { row, select: sel };
+      continue;
+    }
+
     const range = document.createElement('input');
     range.type = 'range';
     range.min = 0;
@@ -209,6 +244,10 @@ export function createParamSliders(container, model, params, onChange) {
     setParams(p) {
       for (const key of model.paramKeys) {
         if (p[key] == null || !controls[key]) continue;
+        if (controls[key].select) {
+          controls[key].select.value = String(snapEnum(key, p[key]));
+          continue;
+        }
         const v = clamp(key, p[key]);
         controls[key].range.value = valueToSlider(key, v);
         controls[key].num.value = formatValue(key, v, limits[key]);

@@ -57,6 +57,14 @@ describe('pentodeIp / screenIg2 (6550-like)', () => {
     const ig2 = screenIg2(0, 300, p);
     assert.ok(ig2 > 0);
   });
+
+  it('screen current uses EX, matching the exported subckt', () => {
+    const e = 300 / p.MU;
+    const ig2 = screenIg2(0, 300, p);
+    assert.ok(Math.abs(ig2 - Math.pow(e, p.EX) / p.KG2) < 1e-12);
+    const other = screenIg2(0, 300, { ...p, EX: 1.5 });
+    assert.ok(Math.abs(ig2 - other) > 1e-6);
+  });
 });
 
 describe('parseVgList', () => {
@@ -85,7 +93,7 @@ describe('curveFamily', () => {
 describe('clampParams', () => {
   it('clamps out-of-range values', () => {
     const c = clampParams('koren', { MU: 1000, EX: 0.5, KG1: 1060, KP: 600, KVB: 300 });
-    assert.equal(c.MU, 200);
+    assert.equal(c.MU, 600);
     assert.equal(c.EX, 1.0);
   });
 });

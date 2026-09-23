@@ -107,7 +107,7 @@ function schedulePaint() {
 }
 
 function redraw() {
-  const vgList = parseVgList($('vgList').value);
+  const vgList = state.type === 'diode' ? [0] : parseVgList($('vgList').value);
 
   plot.calib.vpMax = Number($('vpMax').value) || 400;
   plot.calib.ipMax = readIpMaxA();
@@ -175,7 +175,9 @@ function updateDrawStatus(extra = '') {
   const nPts = countGuidePoints(state.guides);
   const base =
     nPts === 0
-      ? 'Click the plot to place a few points along each datasheet Vg curve. Change Active Vg for the next curve, then Fit.'
+      ? state.type === 'diode'
+        ? 'Click the plot to place points along the anode curve, then Fit.'
+        : 'Click the plot to place a few points along each datasheet Vg curve. Change Active Vg for the next curve, then Fit.'
       : `${nCurves} guide curve(s), ${nPts} point(s). Drag points to adjust.`;
   el.textContent = extra ? `${base} ${extra}` : base;
 }
@@ -212,8 +214,14 @@ function setGuides(guides, { fit = false } = {}) {
 
 function updateMultiVisibility() {
   const multi = isMultiGrid();
+  const diode = state.type === 'diode';
   $('eg2Row').style.display = multi ? '' : 'none';
   $('showScreenRow').style.display = multi ? '' : 'none';
+  $('vgRow').style.display = diode ? 'none' : '';
+  $('capCCG').style.display = diode ? 'none' : '';
+  $('capCGP').style.display = diode ? 'none' : '';
+  $('capRGI').style.display = diode ? 'none' : '';
+  $('capCCPLabel').textContent = diode ? 'CP (pF)' : 'CCP (pF)';
   if (sliderApi) sliderApi.setMultiGrid(multi);
 }
 
@@ -229,7 +237,6 @@ function updateTypeOptions() {
     state.type = model.supports[0];
     sel.value = state.type;
   }
-  $('modelNote').hidden = true;
 }
 
 function switchModel(modelId, { resetParams = true } = {}) {
@@ -247,6 +254,7 @@ function switchModel(modelId, { resetParams = true } = {}) {
       ...state.params,
     });
   }
+  $('modelNote').hidden = true;
   rebuildSliders();
   refreshPresetOptions();
   scheduleRedraw();
@@ -268,11 +276,19 @@ function applyPreset(preset) {
     if (preset.sweep.ipMax != null) setIpMaxMa(preset.sweep.ipMax, { fromAmps: true });
     if (preset.sweep.eg2 != null) $('eg2').value = preset.sweep.eg2;
   }
-  writeCaps(preset.params);
+  const note = $('modelNote');
+  if (preset.comment) {
+    note.hidden = false;
+    note.textContent = preset.comment;
+  } else {
+    note.hidden = true;
+    note.textContent = '';
+  }
   state.params = clampParams(modelId, {
     ...defaultParams(modelId, preset.type),
     ...preset.params,
   });
+  writeCaps(state.params);
   rebuildSliders();
   setParams(state.params);
   updateMultiVisibility();
@@ -368,15 +384,14 @@ function restore() {
 
 function bindUi() {
   const modelSel = $('modelSelect');
+  modelSel.replaceChildren();
   for (const m of listModels()) {
-    let opt = [...modelSel.options].find((o) => o.value === m.id);
-    if (!opt) {
-      opt = document.createElement('option');
-      opt.value = m.id;
-      modelSel.appendChild(opt);
-    }
+    const opt = document.createElement('option');
+    opt.value = m.id;
     opt.textContent = m.label;
+    modelSel.appendChild(opt);
   }
+  modelSel.value = state.modelId;
 
   rebuildSliders();
   updateTypeOptions();
@@ -618,6 +633,7 @@ async function loadPresets() {
   sel.addEventListener('change', () => {
     const preset = state.presets.find((p) => p.id === sel.value);
     if (preset) applyPreset(preset);
+    else $('modelNote').hidden = true;
   });
 }
 

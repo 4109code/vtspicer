@@ -12,7 +12,9 @@ Overlay plate-current equation on a datasheet image -> match curve -> export as 
 
 ## Equations
 
-- **Koren** — classic softplus / `atan` phenomenological forms ([article](https://www.normankoren.com/Audio/Tubemodspice_article.html)). Author: Norman Koren.
+- **Koren** — classic softplus / `atan` phenomenological forms ([article](https://www.normankoren.com/Audio/Tubemodspice_article.html)). Author: Norman Koren. Screen current uses the same exponent `EX` as the plate law.
+- **Karpov** — Koren pentode plate law with a residual screen: `Ig2 = max(0, Ik − Ip)`, `Ik = max(Eg2/μ + Eg, 0)^EX / KC`. Knee is `atan(Ep/KVB)` or `1.57·tanh(2·Ep/(KVB·π))`. Author: Eugene Karpov.
+- **Duncan** — rectifier `Ia = K·max(Vak,0)^EX`. Author: Duncan Munro.
 - **Ayumi** — generic (G, μc, μm, α, emission limit; pentode via screen-driven cathode current + plate fraction). Author: Ayumi Nakabayashi.
 - **Immler** — simplified interactive form (steering voltage + space charge + low-Va knee; pentode via virtual anode). Author: Adrian Immler.
 - **Ridge** — original smooth control-voltage ridge + space-charge law. Pentode plate/screen split is explicit: `KN` sets the knee, `RS` is the screen share left at high Vp (so Ig2 falls as Ep rises), `MU2` sets how flat the saturated plate curves stay.
@@ -42,4 +44,4 @@ Open [http://localhost](http://localhost)
 
 ## License
 
-MIT. Koren, Ayumi, and Immler equations are credited to their authors. Ridge is an original formula in this project.
+MIT. Koren, Karpov, Duncan, Ayumi, and Immler equations are credited to their authors. Ridge is an original formula in this project.

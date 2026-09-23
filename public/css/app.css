@@ -158,6 +158,12 @@ input[type="file"] {
   user-select: none;
 }
 
+.param-row select {
+  margin: 0;
+  grid-column: 2 / span 2;
+  padding: 0.2rem;
+}
+
 .param-row input[type="number"].scrubbing {
   cursor: grabbing;
   background: #1e2a22;

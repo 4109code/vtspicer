@@ -1,10 +1,58 @@
 [
   {
+    "id": "12AT7",
+    "name": "12AT7",
+    "model": "koren",
+    "type": "triode",
+    "comment": "Norman Koren — Koren triode",
+    "params": {
+      "MU": 60,
+      "EX": 1.35,
+      "KG1": 460,
+      "KP": 300,
+      "KVB": 300,
+      "VCT": 0,
+      "RGI": 2000,
+      "CCG": 2.3,
+      "CGP": 2.2,
+      "CCP": 1
+    },
+    "sweep": {
+      "vgList": "0:-1:-9",
+      "vpMax": 400,
+      "ipMax": 0.1
+    }
+  },
+  {
+    "id": "12AU7",
+    "name": "12AU7",
+    "model": "koren",
+    "type": "triode",
+    "comment": "Norman Koren — Koren triode",
+    "params": {
+      "MU": 21.5,
+      "EX": 1.3,
+      "KG1": 1180,
+      "KP": 84,
+      "KVB": 300,
+      "VCT": 0,
+      "RGI": 2000,
+      "CCG": 2.3,
+      "CGP": 2.2,
+      "CCP": 1
+    },
+    "sweep": {
+      "vgList": "0:-2:-24",
+      "vpMax": 350,
+      "ipMax": 0.1
+    }
+  },
+  {
     "id": "12AX7",
     "name": "12AX7",
     "model": "koren",
     "type": "triode",
-    "comment": "Norman Koren Table 1",
+    "comment": "Norman Koren — Koren triode",
     "params": {
       "MU": 100,
       "EX": 1.4,
@@ -17,110 +65,2717 @@
       "CGP": 2.4,
       "CCP": 0.9
     },
-    "sweep": { "vgList": "0:-0.5:-4", "vpMax": 400, "ipMax": 0.006 }
+    "sweep": {
+      "vgList": "0:-0.5:-5",
+      "vpMax": 400,
+      "ipMax": 0.02
+    }
   },
   {
-    "id": "12AU7",
-    "name": "12AU7",
+    "id": "2A3",
+    "name": "2A3",
     "model": "koren",
     "type": "triode",
-    "comment": "Norman Koren Table 1",
+    "comment": "Norman Koren — Koren triode",
     "params": {
-      "MU": 21.5,
-      "EX": 1.3,
-      "KG1": 1180,
-      "KP": 84,
+      "MU": 4.2,
+      "EX": 1.4,
+      "KG1": 1500,
+      "KP": 60,
       "KVB": 300,
       "VCT": 0,
       "RGI": 2000,
       "CCG": 2.3,
       "CGP": 2.2,
-      "CCP": 1.0
+      "CCP": 1
     },
-    "sweep": { "vgList": "0:-4:-20", "vpMax": 400, "ipMax": 0.03 }
+    "sweep": {
+      "vgList": "0:-20:-140",
+      "vpMax": 500,
+      "ipMax": 2
+    }
   },
   {
-    "id": "6DJ8",
-    "name": "6DJ8",
+    "id": "300B",
+    "name": "300B",
     "model": "koren",
     "type": "triode",
-    "comment": "Norman Koren Table 1",
+    "comment": "Norman Koren — Koren triode",
     "params": {
-      "MU": 33,
-      "EX": 1.3,
-      "KG1": 300,
-      "KP": 120,
+      "MU": 3.95,
+      "EX": 1.4,
+      "KG1": 1550,
+      "KP": 65,
       "KVB": 300,
       "VCT": 0,
-      "RGI": 2000,
+      "RGI": 1000,
       "CCG": 2.3,
       "CGP": 2.2,
-      "CCP": 1.0
+      "CCP": 1
     },
-    "sweep": { "vgList": "0:-1:-6", "vpMax": 300, "ipMax": 0.03 }
+    "sweep": {
+      "vgList": "0:-20:-140",
+      "vpMax": 500,
+      "ipMax": 2
+    }
+  },
+  {
+    "id": "30P1S_T",
+    "name": "30P1S_T",
+    "model": "koren",
+    "type": "triode",
+    "comment": "Eugene Karpov — Koren triode",
+    "params": {
+      "MU": 7.938,
+      "EX": 1.4,
+      "KG1": 525,
+      "KP": 30,
+      "KVB": 513,
+      "VCT": 0.386,
+      "RGI": 1000,
+      "CCG": 19,
+      "CGP": 2.3,
+      "CCP": 11
+    },
+    "sweep": {
+      "vgList": "0:-10:-90",
+      "vpMax": 500,
+      "ipMax": 2
+    }
+  },
+  {
+    "id": "5842",
+    "name": "5842",
+    "model": "koren",
+    "type": "triode",
+    "comment": "Mithat Konar — Koren triode",
+    "params": {
+      "MU": 42.4,
+      "EX": 2.21,
+      "KG1": 393,
+      "KP": 629,
+      "KVB": 446,
+      "VCT": 0,
+      "RGI": 2000,
+      "CCG": 9,
+      "CGP": 1.8,
+      "CCP": 0.48
+    },
+    "sweep": {
+      "vgList": "0:-1:-8",
+      "vpMax": 350,
+      "ipMax": 1
+    }
   },
   {
     "id": "6550",
     "name": "6550",
     "model": "koren",
     "type": "pentode",
-    "comment": "Norman Koren Table 1",
+    "comment": "Norman Koren — Koren pentode (screen current stays up as Ep rises)",
     "params": {
       "MU": 7.9,
       "EX": 1.35,
       "KG1": 890,
-      "KG2": 4200,
       "KP": 60,
       "KVB": 24,
+      "KG2": 4200,
       "VCT": 0,
       "RGI": 1000,
       "CCG": 14,
       "CGP": 0.85,
       "CCP": 12
     },
-    "sweep": { "vgList": "0:-5:-50", "vpMax": 500, "ipMax": 0.4, "eg2": 300 }
+    "sweep": {
+      "vgList": "0:-5:-40",
+      "vpMax": 500,
+      "ipMax": 0.5,
+      "eg2": 250
+    }
   },
   {
-    "id": "KT88",
-    "name": "KT88",
+    "id": "6AN8P",
+    "name": "6AN8P",
     "model": "koren",
     "type": "pentode",
-    "comment": "Norman Koren Table 1",
+    "comment": "Norman Koren — Koren pentode (screen current stays up as Ep rises)",
     "params": {
-      "MU": 8.8,
+      "MU": 45,
       "EX": 1.35,
-      "KG1": 730,
-      "KG2": 4200,
-      "KP": 32,
-      "KVB": 16,
+      "KG1": 520,
+      "KP": 120,
+      "KVB": 18,
+      "KG2": 120,
+      "VCT": 0,
+      "RGI": 2000,
+      "CCG": 8,
+      "CGP": 0.8,
+      "CCP": 3
+    },
+    "sweep": {
+      "vgList": "0:-1:-8",
+      "vpMax": 400,
+      "ipMax": 0.1,
+      "eg2": 200
+    }
+  },
+  {
+    "id": "6AN8T",
+    "name": "6AN8T",
+    "model": "koren",
+    "type": "triode",
+    "comment": "Norman Koren — Koren triode",
+    "params": {
+      "MU": 21.2,
+      "EX": 1.36,
+      "KG1": 945,
+      "KP": 84,
+      "KVB": 300,
+      "VCT": 0,
+      "RGI": 2000,
+      "CCG": 2.7,
+      "CGP": 2.2,
+      "CCP": 1
+    },
+    "sweep": {
+      "vgList": "0:-2:-24",
+      "vpMax": 350,
+      "ipMax": 0.2
+    }
+  },
+  {
+    "id": "6B4G",
+    "name": "6B4G",
+    "model": "koren",
+    "type": "triode",
+    "comment": "Eugene Karpov — Koren triode",
+    "params": {
+      "MU": 4.22,
+      "EX": 1.546,
+      "KG1": 2503.3,
+      "KP": 42.28,
+      "KVB": 300,
       "VCT": 0,
       "RGI": 1000,
-      "CCG": 14,
-      "CGP": 0.85,
-      "CCP": 12
+      "CCG": 16.5,
+      "CGP": 5.5,
+      "CCP": 7.5
     },
-    "sweep": { "vgList": "0:-10:-60", "vpMax": 500, "ipMax": 0.5, "eg2": 250 }
+    "sweep": {
+      "vgList": "0:-20:-140",
+      "vpMax": 500,
+      "ipMax": 2
+    }
+  },
+  {
+    "id": "6BR7_T",
+    "name": "6BR7_T",
+    "model": "koren",
+    "type": "triode",
+    "comment": "Eugene Karpov — Koren triode",
+    "params": {
+      "MU": 22.19,
+      "EX": 1.357,
+      "KG1": 1786.4,
+      "KP": 129.75,
+      "KVB": 300,
+      "VCT": 0,
+      "RGI": 1000,
+      "CCG": 4,
+      "CGP": 0.18,
+      "CCP": 4
+    },
+    "sweep": {
+      "vgList": "0:-2:-20",
+      "vpMax": 350,
+      "ipMax": 0.1
+    }
+  },
+  {
+    "id": "6CW4",
+    "name": "6CW4",
+    "model": "koren",
+    "type": "triode",
+    "comment": "Eugene Karpov — Koren triode — library E2 polynomial is unused",
+    "params": {
+      "MU": 68.75,
+      "EX": 1.35,
+      "KG1": 160,
+      "KP": 250,
+      "KVB": 300,
+      "VCT": 0,
+      "RGI": 2000,
+      "CCG": 4.3,
+      "CGP": 0.92,
+      "CCP": 1.8
+    },
+    "sweep": {
+      "vgList": "0:-1:-9",
+      "vpMax": 400,
+      "ipMax": 0.2
+    }
+  },
+  {
+    "id": "6DJ8",
+    "name": "6DJ8",
+    "model": "koren",
+    "type": "triode",
+    "comment": "Norman Koren — Koren triode",
+    "params": {
+      "MU": 28,
+      "EX": 1.3,
+      "KG1": 330,
+      "KP": 320,
+      "KVB": 300,
+      "VCT": 0,
+      "RGI": 2000,
+      "CCG": 2.3,
+      "CGP": 2.1,
+      "CCP": 0.7
+    },
+    "sweep": {
+      "vgList": "0:-2:-14",
+      "vpMax": 350,
+      "ipMax": 0.2
+    }
+  },
+  {
+    "id": "6E5P_T",
+    "name": "6E5P_T",
+    "model": "koren",
+    "type": "triode",
+    "comment": "Eugene Karpov — Koren triode",
+    "params": {
+      "MU": 45.82,
+      "EX": 1.977,
+      "KG1": 196.8,
+      "KP": 259.85,
+      "KVB": 300,
+      "VCT": 0,
+      "RGI": 1500,
+      "CCG": 15,
+      "CGP": 0.6,
+      "CCP": 2.5
+    },
+    "sweep": {
+      "vgList": "0:-1:-8",
+      "vpMax": 350,
+      "ipMax": 1
+    }
+  },
+  {
+    "id": "6F12P_T",
+    "name": "6F12P_T",
+    "model": "koren",
+    "type": "triode",
+    "comment": "Eugene Karpov — Koren triode",
+    "params": {
+      "MU": 523.74,
+      "EX": 1.039,
+      "KG1": 13.5,
+      "KP": 384.91,
+      "KVB": 300,
+      "VCT": 0,
+      "RGI": 4500,
+      "CCG": 4.6,
+      "CGP": 1.6,
+      "CCP": 0.26
+    },
+    "sweep": {
+      "vgList": "0:-0.5:-4.5",
+      "vpMax": 400,
+      "ipMax": 0.2
+    }
+  },
+  {
+    "id": "6F3P_PT",
+    "name": "6F3P_PT",
+    "model": "koren",
+    "type": "triode",
+    "comment": "Eugene Karpov — Koren triode",
+    "params": {
+      "MU": 16.69,
+      "EX": 1.952,
+      "KG1": 881.6,
+      "KP": 19.98,
+      "KVB": 300,
+      "VCT": 0,
+      "RGI": 1500,
+      "CCG": 9.3,
+      "CGP": 0.55,
+      "CCP": 8.5
+    },
+    "sweep": {
+      "vgList": "0:-5:-50",
+      "vpMax": 350,
+      "ipMax": 2
+    }
+  },
+  {
+    "id": "6F3P_T",
+    "name": "6F3P_T",
+    "model": "koren",
+    "type": "triode",
+    "comment": "Eugene Karpov — Koren triode",
+    "params": {
+      "MU": 69.07,
+      "EX": 1.044,
+      "KG1": 826.1,
+      "KP": 528.17,
+      "KVB": 300,
+      "VCT": 0,
+      "RGI": 1500,
+      "CCG": 2.2,
+      "CGP": 3.7,
+      "CCP": 0.4
+    },
+    "sweep": {
+      "vgList": "0:-1:-8",
+      "vpMax": 400,
+      "ipMax": 0.02
+    }
+  },
+  {
+    "id": "6F5P-PT",
+    "name": "6F5P-PT",
+    "model": "koren",
+    "type": "triode",
+    "comment": "Eugene Karpov — Koren triode",
+    "params": {
+      "MU": 7.49,
+      "EX": 1.622,
+      "KG1": 1336.3,
+      "KP": 59.91,
+      "KVB": 120,
+      "VCT": 0,
+      "RGI": 1000,
+      "CCG": 11.7,
+      "CGP": 1.56,
+      "CCP": 8.8
+    },
+    "sweep": {
+      "vgList": "0:-10:-70",
+      "vpMax": 500,
+      "ipMax": 2
+    }
+  },
+  {
+    "id": "6F5P-T",
+    "name": "6F5P-T",
+    "model": "koren",
+    "type": "triode",
+    "comment": "Eugene Karpov — Koren triode",
+    "params": {
+      "MU": 73.16,
+      "EX": 1.668,
+      "KG1": 522.9,
+      "KP": 353.07,
+      "KVB": 519,
+      "VCT": 0.6,
+      "RGI": 1000,
+      "CCG": 3.5,
+      "CGP": 1.8,
+      "CCP": 0.25
+    },
+    "sweep": {
+      "vgList": "0:-1:-7",
+      "vpMax": 400,
+      "ipMax": 0.1
+    }
+  },
+  {
+    "id": "6G2",
+    "name": "6G2",
+    "model": "koren",
+    "type": "triode",
+    "comment": "Eugene Karpov — Koren triode",
+    "params": {
+      "MU": 81.79,
+      "EX": 1.236,
+      "KG1": 1884.6,
+      "KP": 742.04,
+      "KVB": 300,
+      "VCT": 0,
+      "RGI": 1000,
+      "CCG": 2.8,
+      "CGP": 1.6,
+      "CCP": 3
+    },
+    "sweep": {
+      "vgList": "0:-0.5:-5.5",
+      "vpMax": 400,
+      "ipMax": 0.01
+    }
+  },
+  {
+    "id": "6G7",
+    "name": "6G7",
+    "model": "koren",
+    "type": "triode",
+    "comment": "Eugene Karpov — Koren triode",
+    "params": {
+      "MU": 64.65,
+      "EX": 1.204,
+      "KG1": 1444,
+      "KP": 380.71,
+      "KVB": 300,
+      "VCT": 0,
+      "RGI": 1000,
+      "CCG": 2.8,
+      "CGP": 1.6,
+      "CCP": 3
+    },
+    "sweep": {
+      "vgList": "0:-1:-8",
+      "vpMax": 400,
+      "ipMax": 0.02
+    }
+  },
+  {
+    "id": "6J11P_T",
+    "name": "6J11P_T",
+    "model": "koren",
+    "type": "triode",
+    "comment": "Eugene Karpov — Koren triode",
+    "params": {
+      "MU": 66.528,
+      "EX": 1.708,
+      "KG1": 48.75,
+      "KP": 246,
+      "KVB": 54,
+      "VCT": 0.18,
+      "RGI": 1000,
+      "CCG": 6.5,
+      "CGP": 2,
+      "CCP": 5
+    },
+    "sweep": {
+      "vgList": "0:-1:-8",
+      "vpMax": 400,
+      "ipMax": 1
+    }
+  },
+  {
+    "id": "6J2P_T",
+    "name": "6J2P_T",
+    "model": "koren",
+    "type": "triode",
+    "comment": "Eugene Karpov — Koren triode",
+    "params": {
+      "MU": 35.87,
+      "EX": 1.506,
+      "KG1": 511.1,
+      "KP": 131.24,
+      "KVB": 300,
+      "VCT": 0,
+      "RGI": 2000,
+      "CCG": 4.1,
+      "CGP": 0.115,
+      "CCP": 2.35
+    },
+    "sweep": {
+      "vgList": "0:-2:-14",
+      "vpMax": 350,
+      "ipMax": 0.2
+    }
+  },
+  {
+    "id": "6J32P_T",
+    "name": "6J32P_T",
+    "model": "koren",
+    "type": "triode",
+    "comment": "Eugene Karpov — Koren triode",
+    "params": {
+      "MU": 37.23,
+      "EX": 1.264,
+      "KG1": 1276.2,
+      "KP": 231.21,
+      "KVB": 300,
+      "VCT": 0,
+      "RGI": 1000,
+      "CCG": 4,
+      "CGP": 0.1,
+      "CCP": 5.5
+    },
+    "sweep": {
+      "vgList": "0:-1:-12",
+      "vpMax": 350,
+      "ipMax": 0.05
+    }
+  },
+  {
+    "id": "6J38P_T",
+    "name": "6J38P_T",
+    "model": "koren",
+    "type": "triode",
+    "comment": "Eugene Karpov — Koren triode",
+    "params": {
+      "MU": 38.27,
+      "EX": 1.184,
+      "KG1": 177.5,
+      "KP": 272.34,
+      "KVB": 300,
+      "VCT": 0,
+      "RGI": 1000,
+      "CCG": 5.8,
+      "CGP": 0.15,
+      "CCP": 3.1
+    },
+    "sweep": {
+      "vgList": "0:-1:-12",
+      "vpMax": 350,
+      "ipMax": 0.2
+    }
+  },
+  {
+    "id": "6J3P_T",
+    "name": "6J3P_T",
+    "model": "koren",
+    "type": "triode",
+    "comment": "Eugene Karpov — Koren triode",
+    "params": {
+      "MU": 59.47,
+      "EX": 1.4,
+      "KG1": 360,
+      "KP": 198,
+      "KVB": 4032,
+      "VCT": 0.258,
+      "RGI": 1000,
+      "CCG": 6.5,
+      "CGP": 2,
+      "CCP": 5
+    },
+    "sweep": {
+      "vgList": "0:-1:-11",
+      "vpMax": 400,
+      "ipMax": 0.1
+    }
+  },
+  {
+    "id": "6J4_T",
+    "name": "6J4_T",
+    "model": "koren",
+    "type": "triode",
+    "comment": "Eugene Karpov — Koren triode",
+    "params": {
+      "MU": 44.95,
+      "EX": 1.556,
+      "KG1": 290,
+      "KP": 194.12,
+      "KVB": 300,
+      "VCT": 0,
+      "RGI": 1000,
+      "CCG": 9,
+      "CGP": 0.2,
+      "CCP": 5
+    },
+    "sweep": {
+      "vgList": "0:-1:-10",
+      "vpMax": 350,
+      "ipMax": 0.2
+    }
+  },
+  {
+    "id": "6J4P_T",
+    "name": "6J4P_T",
+    "model": "koren",
+    "type": "triode",
+    "comment": "Eugene Karpov — Koren triode",
+    "params": {
+      "MU": 41.664,
+      "EX": 1.302,
+      "KG1": 525,
+      "KP": 174,
+      "KVB": 375,
+      "VCT": 0.23,
+      "RGI": 1000,
+      "CCG": 6.5,
+      "CGP": 2,
+      "CCP": 5
+    },
+    "sweep": {
+      "vgList": "0:-1:-12",
+      "vpMax": 350,
+      "ipMax": 0.1
+    }
+  },
+  {
+    "id": "6J52P_T",
+    "name": "6J52P_T",
+    "model": "koren",
+    "type": "triode",
+    "comment": "Eugene Karpov — Koren triode",
+    "params": {
+      "MU": 62.496,
+      "EX": 1.316,
+      "KG1": 82.5,
+      "KP": 396,
+      "KVB": 477,
+      "VCT": 0.182,
+      "RGI": 1000,
+      "CCG": 6.5,
+      "CGP": 2,
+      "CCP": 5
+    },
+    "sweep": {
+      "vgList": "0:-1:-8",
+      "vpMax": 400,
+      "ipMax": 0.5
+    }
+  },
+  {
+    "id": "6J7_T",
+    "name": "6J7_T",
+    "model": "koren",
+    "type": "triode",
+    "comment": "Eugene Karpov — Koren triode",
+    "params": {
+      "MU": 20,
+      "EX": 1.4,
+      "KG1": 255,
+      "KP": 186,
+      "KVB": 417,
+      "VCT": 0.2,
+      "RGI": 1000,
+      "CCG": 5,
+      "CGP": 2,
+      "CCP": 14
+    },
+    "sweep": {
+      "vgList": "0:-2:-20",
+      "vpMax": 350,
+      "ipMax": 0.5
+    }
+  },
+  {
+    "id": "6J8_T",
+    "name": "6J8_T",
+    "model": "koren",
+    "type": "triode",
+    "comment": "Eugene Karpov — Koren triode",
+    "params": {
+      "MU": 19.992,
+      "EX": 1.302,
+      "KG1": 1500,
+      "KP": 132,
+      "KVB": 270,
+      "VCT": 0.26,
+      "RGI": 1000,
+      "CCG": 3.4,
+      "CGP": 2.7,
+      "CCP": 11
+    },
+    "sweep": {
+      "vgList": "0:-2:-22",
+      "vpMax": 350,
+      "ipMax": 0.1
+    }
+  },
+  {
+    "id": "6J9P_T",
+    "name": "6J9P_T",
+    "model": "koren",
+    "type": "triode",
+    "comment": "Eugene Karpov — Koren triode",
+    "params": {
+      "MU": 65.184,
+      "EX": 1.358,
+      "KG1": 150,
+      "KP": 372,
+      "KVB": 492,
+      "VCT": 0.16,
+      "RGI": 1000,
+      "CCG": 7.5,
+      "CGP": 2,
+      "CCP": 3
+    },
+    "sweep": {
+      "vgList": "0:-1:-8",
+      "vpMax": 400,
+      "ipMax": 0.2
+    }
   },
   {
     "id": "6L6GC",
     "name": "6L6GC",
     "model": "koren",
     "type": "pentode",
-    "comment": "Norman Koren Table 1 (6L6CG)",
+    "comment": "Norman Koren — Koren pentode (screen current stays up as Ep rises)",
     "params": {
       "MU": 8.7,
       "EX": 1.35,
       "KG1": 1460,
-      "KG2": 4500,
       "KP": 48,
       "KVB": 12,
+      "KG2": 4500,
       "VCT": 0,
       "RGI": 1000,
       "CCG": 14,
       "CGP": 0.85,
       "CCP": 12
     },
-    "sweep": { "vgList": "0:-5:-40", "vpMax": 500, "ipMax": 0.3, "eg2": 250 }
+    "sweep": {
+      "vgList": "0:-5:-35",
+      "vpMax": 500,
+      "ipMax": 0.5,
+      "eg2": 250
+    }
+  },
+  {
+    "id": "6N13S",
+    "name": "6N13S",
+    "model": "koren",
+    "type": "triode",
+    "comment": "Eugene Karpov — Koren triode",
+    "params": {
+      "MU": 2.35,
+      "EX": 1.247,
+      "KG1": 637.1,
+      "KP": 12.4,
+      "KVB": 300,
+      "VCT": 0,
+      "RGI": 1000,
+      "CCG": 8,
+      "CGP": 10,
+      "CCP": 3
+    },
+    "sweep": {
+      "vgList": "0:-50:-300",
+      "vpMax": 500,
+      "ipMax": 5
+    }
+  },
+  {
+    "id": "6N1P",
+    "name": "6N1P",
+    "model": "koren",
+    "type": "triode",
+    "comment": "Eugene Karpov — Koren triode",
+    "params": {
+      "MU": 38.29,
+      "EX": 1.761,
+      "KG1": 1430.7,
+      "KP": 245.76,
+      "KVB": 300,
+      "VCT": 0,
+      "RGI": 2000,
+      "CCG": 3,
+      "CGP": 2.25,
+      "CCP": 1.5
+    },
+    "sweep": {
+      "vgList": "0:-1:-10",
+      "vpMax": 350,
+      "ipMax": 0.1
+    }
+  },
+  {
+    "id": "6N23P",
+    "name": "6N23P",
+    "model": "koren",
+    "type": "triode",
+    "comment": "Eugene Karpov — Koren triode",
+    "params": {
+      "MU": 33.04,
+      "EX": 1.22,
+      "KG1": 212.4,
+      "KP": 183.83,
+      "KVB": 300,
+      "VCT": 0,
+      "RGI": 2000,
+      "CCG": 3.6,
+      "CGP": 1.5,
+      "CCP": 2
+    },
+    "sweep": {
+      "vgList": "0:-2:-14",
+      "vpMax": 350,
+      "ipMax": 0.2
+    }
+  },
+  {
+    "id": "6N27P",
+    "name": "6N27P",
+    "model": "koren",
+    "type": "triode",
+    "comment": "Eugene Karpov — Koren triode",
+    "params": {
+      "MU": 16.3,
+      "EX": 1.3,
+      "KG1": 350.1,
+      "KP": 76.28,
+      "KVB": 150,
+      "VCT": 0,
+      "RGI": 1500,
+      "CCG": 3,
+      "CGP": 1.3,
+      "CCP": 2
+    },
+    "sweep": {
+      "vgList": "0:-5:-30",
+      "vpMax": 350,
+      "ipMax": 0.5
+    }
+  },
+  {
+    "id": "6N28B-V",
+    "name": "6N28B-V",
+    "model": "koren",
+    "type": "triode",
+    "comment": "Eugene Karpov — Koren triode",
+    "params": {
+      "MU": 22.45,
+      "EX": 1.369,
+      "KG1": 458.9,
+      "KP": 82.65,
+      "KVB": 300,
+      "VCT": 0,
+      "RGI": 1500,
+      "CCG": 3.3,
+      "CGP": 2,
+      "CCP": 2.2
+    },
+    "sweep": {
+      "vgList": "0:-2:-22",
+      "vpMax": 350,
+      "ipMax": 0.5
+    }
+  },
+  {
+    "id": "6N2P",
+    "name": "6N2P",
+    "model": "koren",
+    "type": "triode",
+    "comment": "Eugene Karpov — Koren triode",
+    "params": {
+      "MU": 106,
+      "EX": 1.398,
+      "KG1": 1326.3,
+      "KP": 415.26,
+      "KVB": 4680.6,
+      "VCT": 0.3,
+      "RGI": 1500,
+      "CCG": 2.35,
+      "CGP": 0.8,
+      "CCP": 2.5
+    },
+    "sweep": {
+      "vgList": "0:-0.5:-5.5",
+      "vpMax": 400,
+      "ipMax": 0.02
+    }
+  },
+  {
+    "id": "6N30P-DR",
+    "name": "6N30P-DR",
+    "model": "koren",
+    "type": "triode",
+    "comment": "Eugene Karpov — Koren triode",
+    "params": {
+      "MU": 16.81,
+      "EX": 1.305,
+      "KG1": 188,
+      "KP": 110.43,
+      "KVB": 300,
+      "VCT": 0,
+      "RGI": 1500,
+      "CCG": 6.3,
+      "CGP": 2,
+      "CCP": 2.4
+    },
+    "sweep": {
+      "vgList": "0:-5:-25",
+      "vpMax": 350,
+      "ipMax": 1
+    }
+  },
+  {
+    "id": "6N3P",
+    "name": "6N3P",
+    "model": "koren",
+    "type": "triode",
+    "comment": "Eugene Karpov — Koren triode",
+    "params": {
+      "MU": 34.82,
+      "EX": 1.909,
+      "KG1": 1445.3,
+      "KP": 171.13,
+      "KVB": 300,
+      "VCT": 0,
+      "RGI": 1000,
+      "CCG": 2.5,
+      "CGP": 1.3,
+      "CCP": 1.4
+    },
+    "sweep": {
+      "vgList": "0:-1:-11",
+      "vpMax": 350,
+      "ipMax": 0.2
+    }
+  },
+  {
+    "id": "6N3P-E",
+    "name": "6N3P-E",
+    "model": "koren",
+    "type": "triode",
+    "comment": "Eugene Karpov — Koren triode",
+    "params": {
+      "MU": 31.33,
+      "EX": 1.979,
+      "KG1": 1920.5,
+      "KP": 211.72,
+      "KVB": 300,
+      "VCT": 0,
+      "RGI": 1000,
+      "CCG": 2.5,
+      "CGP": 1.3,
+      "CCP": 1.4
+    },
+    "sweep": {
+      "vgList": "0:-1:-11",
+      "vpMax": 350,
+      "ipMax": 0.2
+    }
+  },
+  {
+    "id": "6N5P",
+    "name": "6N5P",
+    "model": "koren",
+    "type": "triode",
+    "comment": "Eugene Karpov — Koren triode",
+    "params": {
+      "MU": 23.76,
+      "EX": 1.244,
+      "KG1": 300.1,
+      "KP": 164.49,
+      "KVB": 300,
+      "VCT": 0,
+      "RGI": 2000,
+      "CCG": 3,
+      "CGP": 2.25,
+      "CCP": 1.5
+    },
+    "sweep": {
+      "vgList": "0:-2:-18",
+      "vpMax": 350,
+      "ipMax": 0.5
+    }
+  },
+  {
+    "id": "6N6P",
+    "name": "6N6P",
+    "model": "koren",
+    "type": "triode",
+    "comment": "Eugene Karpov — Koren triode",
+    "params": {
+      "MU": 17.22,
+      "EX": 1.715,
+      "KG1": 1155,
+      "KP": 87.74,
+      "KVB": 300,
+      "VCT": 0,
+      "RGI": 1000,
+      "CCG": 4,
+      "CGP": 3,
+      "CCP": 1.9
+    },
+    "sweep": {
+      "vgList": "0:-2:-24",
+      "vpMax": 350,
+      "ipMax": 0.5
+    }
+  },
+  {
+    "id": "6N7S",
+    "name": "6N7S",
+    "model": "koren",
+    "type": "triode",
+    "comment": "Eugene Karpov — Koren triode",
+    "params": {
+      "MU": 35.29,
+      "EX": 1.48,
+      "KG1": 3201.6,
+      "KP": 590.54,
+      "KVB": 87.5,
+      "VCT": 0.75,
+      "RGI": 1000,
+      "CCG": 4.3,
+      "CGP": 2.4,
+      "CCP": 5.4
+    },
+    "sweep": {
+      "vgList": "0:-1:-11",
+      "vpMax": 350,
+      "ipMax": 0.05
+    }
+  },
+  {
+    "id": "6N8S",
+    "name": "6N8S",
+    "model": "koren",
+    "type": "triode",
+    "comment": "Eugene Karpov — Koren triode",
+    "params": {
+      "MU": 22.87,
+      "EX": 1.516,
+      "KG1": 2209.8,
+      "KP": 167.87,
+      "KVB": 155.4,
+      "VCT": 0.7,
+      "RGI": 1000,
+      "CCG": 3,
+      "CGP": 1.2,
+      "CCP": 4
+    },
+    "sweep": {
+      "vgList": "0:-2:-18",
+      "vpMax": 350,
+      "ipMax": 0.1
+    }
+  },
+  {
+    "id": "6N9S",
+    "name": "6N9S",
+    "model": "koren",
+    "type": "triode",
+    "comment": "Eugene Karpov — Koren triode",
+    "params": {
+      "MU": 72.7,
+      "EX": 1.126,
+      "KG1": 1278.4,
+      "KP": 621.48,
+      "KVB": 300,
+      "VCT": 0,
+      "RGI": 1500,
+      "CCG": 2.5,
+      "CGP": 2.8,
+      "CCP": 1
+    },
+    "sweep": {
+      "vgList": "0:-1:-7",
+      "vpMax": 400,
+      "ipMax": 0.02
+    }
+  },
+  {
+    "id": "6P13S_T",
+    "name": "6P13S_T",
+    "model": "koren",
+    "type": "triode",
+    "comment": "Eugene Karpov — Koren triode",
+    "params": {
+      "MU": 10.752,
+      "EX": 1.246,
+      "KG1": 435,
+      "KP": 48,
+      "KVB": 1440,
+      "VCT": 0.314,
+      "RGI": 1000,
+      "CCG": 6.5,
+      "CGP": 7,
+      "CCP": 11
+    },
+    "sweep": {
+      "vgList": "0:-10:-70",
+      "vpMax": 500,
+      "ipMax": 1
+    }
+  },
+  {
+    "id": "6P14P_T",
+    "name": "6P14P_T",
+    "model": "koren",
+    "type": "triode",
+    "comment": "Eugene Karpov — Koren triode — library names the grid diode DX-1 but instances DX",
+    "params": {
+      "MU": 21.49,
+      "EX": 1.428,
+      "KG1": 514.4,
+      "KP": 136.46,
+      "KVB": 300,
+      "VCT": 0,
+      "RGI": 1000,
+      "CCG": 11,
+      "CGP": 0.5,
+      "CCP": 7
+    },
+    "sweep": {
+      "vgList": "0:-2:-20",
+      "vpMax": 350,
+      "ipMax": 0.5
+    }
+  },
+  {
+    "id": "6P15P_T",
+    "name": "6P15P_T",
+    "model": "koren",
+    "type": "triode",
+    "comment": "Eugene Karpov — Koren triode",
+    "params": {
+      "MU": 27.21,
+      "EX": 1.568,
+      "KG1": 435,
+      "KP": 138,
+      "KVB": 0.235,
+      "VCT": 0.00025,
+      "RGI": 1000,
+      "CCG": 6.5,
+      "CGP": 7,
+      "CCP": 11
+    },
+    "sweep": {
+      "vgList": "0:-2:-16",
+      "vpMax": 350,
+      "ipMax": 0.5
+    }
+  },
+  {
+    "id": "6P18P_T",
+    "name": "6P18P_T",
+    "model": "koren",
+    "type": "triode",
+    "comment": "Eugene Karpov — Koren triode",
+    "params": {
+      "MU": 16.23,
+      "EX": 1.47,
+      "KG1": 419.3,
+      "KP": 38.32,
+      "KVB": 300,
+      "VCT": 0,
+      "RGI": 1000,
+      "CCG": 11.5,
+      "CGP": 0.7,
+      "CCP": 6
+    },
+    "sweep": {
+      "vgList": "0:-5:-40",
+      "vpMax": 350,
+      "ipMax": 0.5
+    }
+  },
+  {
+    "id": "6P36S_T",
+    "name": "6P36S_T",
+    "model": "koren",
+    "type": "triode",
+    "comment": "Eugene Karpov — Koren triode",
+    "params": {
+      "MU": 6.82,
+      "EX": 1.532,
+      "KG1": 451,
+      "KP": 36.41,
+      "KVB": 300,
+      "VCT": 0,
+      "RGI": 1000,
+      "CCG": 32,
+      "CGP": 4.69,
+      "CCP": 19
+    },
+    "sweep": {
+      "vgList": "0:-10:-90",
+      "vpMax": 500,
+      "ipMax": 5
+    }
+  },
+  {
+    "id": "6P3S",
+    "name": "6P3S",
+    "model": "koren",
+    "type": "pentode",
+    "comment": "Eugene Karpov — Koren pentode (screen current stays up as Ep rises)",
+    "params": {
+      "MU": 14.432,
+      "EX": 1.036,
+      "KG1": 320,
+      "KP": 33,
+      "KVB": 21.6,
+      "KG2": 2200,
+      "VCT": 0,
+      "RGI": 1000,
+      "CCG": 11,
+      "CGP": 0.85,
+      "CCP": 8.2
+    },
+    "sweep": {
+      "vgList": "0:-5:-40",
+      "vpMax": 500,
+      "ipMax": 0.5,
+      "eg2": 250
+    }
+  },
+  {
+    "id": "6P3S_T",
+    "name": "6P3S_T",
+    "model": "koren",
+    "type": "triode",
+    "comment": "Eugene Karpov — Koren triode",
+    "params": {
+      "MU": 10.76,
+      "EX": 1.314,
+      "KG1": 712.7,
+      "KP": 24.67,
+      "KVB": 300,
+      "VCT": 0,
+      "RGI": 1000,
+      "CCG": 11,
+      "CGP": 1,
+      "CCP": 8.2
+    },
+    "sweep": {
+      "vgList": "0:-10:-90",
+      "vpMax": 500,
+      "ipMax": 1
+    }
+  },
+  {
+    "id": "6P45S_T",
+    "name": "6P45S_T",
+    "model": "koren",
+    "type": "triode",
+    "comment": "Eugene Karpov — Koren triode",
+    "params": {
+      "MU": 3.97,
+      "EX": 1.512,
+      "KG1": 517.5,
+      "KP": 43.74,
+      "KVB": 300,
+      "VCT": 0,
+      "RGI": 1000,
+      "CCG": 55,
+      "CGP": 13.7,
+      "CCP": 20
+    },
+    "sweep": {
+      "vgList": "0:-20:-140",
+      "vpMax": 500,
+      "ipMax": 10
+    }
+  },
+  {
+    "id": "6P7S_T",
+    "name": "6P7S_T",
+    "model": "koren",
+    "type": "triode",
+    "comment": "Eugene Karpov — Koren triode",
+    "params": {
+      "MU": 8.49,
+      "EX": 1.27,
+      "KG1": 903.4,
+      "KP": 48.3,
+      "KVB": 300,
+      "VCT": 0,
+      "RGI": 1000,
+      "CCG": 11.5,
+      "CGP": 0.6,
+      "CCP": 6
+    },
+    "sweep": {
+      "vgList": "0:-10:-80",
+      "vpMax": 500,
+      "ipMax": 0.5
+    }
+  },
+  {
+    "id": "6P9_T",
+    "name": "6P9_T",
+    "model": "koren",
+    "type": "triode",
+    "comment": "Eugene Karpov — Koren triode",
+    "params": {
+      "MU": 23.88,
+      "EX": 1.248,
+      "KG1": 251.8,
+      "KP": 116.21,
+      "KVB": 300,
+      "VCT": 0,
+      "RGI": 1000,
+      "CCG": 11.15,
+      "CGP": 0.46,
+      "CCP": 6.65
+    },
+    "sweep": {
+      "vgList": "0:-2:-20",
+      "vpMax": 350,
+      "ipMax": 0.5
+    }
+  },
+  {
+    "id": "6R3S-1_T",
+    "name": "6R3S-1_T",
+    "model": "koren",
+    "type": "triode",
+    "comment": "Eugene Karpov — Koren triode",
+    "params": {
+      "MU": 7.15,
+      "EX": 1.418,
+      "KG1": 419.4,
+      "KP": 44.66,
+      "KVB": 300,
+      "VCT": 0,
+      "RGI": 1000,
+      "CCG": 13,
+      "CGP": 0.3,
+      "CCP": 6
+    },
+    "sweep": {
+      "vgList": "0:-10:-80",
+      "vpMax": 500,
+      "ipMax": 5
+    }
+  },
+  {
+    "id": "6S17B",
+    "name": "6S17B",
+    "model": "koren",
+    "type": "triode",
+    "comment": "Eugene Karpov — Koren triode",
+    "params": {
+      "MU": 84,
+      "EX": 2.03,
+      "KG1": 1635,
+      "KP": 258,
+      "KVB": 106.5,
+      "VCT": 0.108,
+      "RGI": 1000,
+      "CCG": 2.9,
+      "CGP": 1.6,
+      "CCP": 1.7
+    },
+    "sweep": {
+      "vgList": "0:-0.5:-6",
+      "vpMax": 400,
+      "ipMax": 0.05
+    }
+  },
+  {
+    "id": "6S19P",
+    "name": "6S19P",
+    "model": "koren",
+    "type": "triode",
+    "comment": "Eugene Karpov — Koren triode",
+    "params": {
+      "MU": 2.41,
+      "EX": 1.972,
+      "KG1": 9117.4,
+      "KP": 15.02,
+      "KVB": 300,
+      "VCT": 0,
+      "RGI": 1500,
+      "CCG": 6.5,
+      "CGP": 8,
+      "CCP": 2.5
+    },
+    "sweep": {
+      "vgList": "0:-20:-220",
+      "vpMax": 500,
+      "ipMax": 10
+    }
+  },
+  {
+    "id": "6S33S",
+    "name": "6S33S",
+    "model": "koren",
+    "type": "triode",
+    "comment": "Eugene Karpov — Koren triode",
+    "params": {
+      "MU": 3.1,
+      "EX": 1.4,
+      "KG1": 163,
+      "KP": 15,
+      "KVB": 300,
+      "VCT": 0,
+      "RGI": 1000,
+      "CCG": 2.3,
+      "CGP": 2.2,
+      "CCP": 1
+    },
+    "sweep": {
+      "vgList": "0:-20:-220",
+      "vpMax": 500,
+      "ipMax": 20
+    }
+  },
+  {
+    "id": "6S3P",
+    "name": "6S3P",
+    "model": "koren",
+    "type": "triode",
+    "comment": "Eugene Karpov — Koren triode",
+    "params": {
+      "MU": 54.1,
+      "EX": 2.828,
+      "KG1": 405,
+      "KP": 170,
+      "KVB": 150,
+      "VCT": 0,
+      "RGI": 1000,
+      "CCG": 6.9,
+      "CGP": 1.65,
+      "CCP": 2
+    },
+    "sweep": {
+      "vgList": "0:-1:-7",
+      "vpMax": 400,
+      "ipMax": 2
+    }
+  },
+  {
+    "id": "6S41S",
+    "name": "6S41S",
+    "model": "koren",
+    "type": "triode",
+    "comment": "Eugene Karpov — Koren triode",
+    "params": {
+      "MU": 2.58,
+      "EX": 1.45,
+      "KG1": 689.1,
+      "KP": 9.98,
+      "KVB": 300,
+      "VCT": 0,
+      "RGI": 1000,
+      "CCG": 11,
+      "CGP": 15,
+      "CCP": 5
+    },
+    "sweep": {
+      "vgList": "0:-50:-300",
+      "vpMax": 500,
+      "ipMax": 10
+    }
+  },
+  {
+    "id": "6S45P-E",
+    "name": "6S45P-E",
+    "model": "koren",
+    "type": "triode",
+    "comment": "Eugene Karpov — Koren triode",
+    "params": {
+      "MU": 53.57,
+      "EX": 1.957,
+      "KG1": 126.6,
+      "KP": 368.51,
+      "KVB": 300,
+      "VCT": 0,
+      "RGI": 1000,
+      "CCG": 11,
+      "CGP": 5,
+      "CCP": 1.9
+    },
+    "sweep": {
+      "vgList": "0:-1:-8",
+      "vpMax": 400,
+      "ipMax": 1
+    }
+  },
+  {
+    "id": "6S4S",
+    "name": "6S4S",
+    "model": "koren",
+    "type": "triode",
+    "comment": "Eugene Karpov — Koren triode",
+    "params": {
+      "MU": 4.41,
+      "EX": 1.251,
+      "KG1": 855.3,
+      "KP": 57.29,
+      "KVB": 300,
+      "VCT": 0,
+      "RGI": 2000,
+      "CCG": 16.5,
+      "CGP": 5.5,
+      "CCP": 7.5
+    },
+    "sweep": {
+      "vgList": "0:-20:-140",
+      "vpMax": 500,
+      "ipMax": 1
+    }
+  },
+  {
+    "id": "6S51N",
+    "name": "6S51N",
+    "model": "koren",
+    "type": "triode",
+    "comment": "Eugene Karpov — Koren triode",
+    "params": {
+      "MU": 54.72,
+      "EX": 1.248,
+      "KG1": 123.5,
+      "KP": 99.63,
+      "KVB": 300,
+      "VCT": 0,
+      "RGI": 1500,
+      "CCG": 4.2,
+      "CGP": 1.8,
+      "CCP": 2.5
+    },
+    "sweep": {
+      "vgList": "0:-2:-18",
+      "vpMax": 400,
+      "ipMax": 0.5
+    }
+  },
+  {
+    "id": "6S52N",
+    "name": "6S52N",
+    "model": "koren",
+    "type": "triode",
+    "comment": "Eugene Karpov — Koren triode",
+    "params": {
+      "MU": 70.32,
+      "EX": 1.25,
+      "KG1": 188.8,
+      "KP": 230.58,
+      "KVB": 300,
+      "VCT": 0,
+      "RGI": 1500,
+      "CCG": 4.35,
+      "CGP": 1.9,
+      "CCP": 1.3
+    },
+    "sweep": {
+      "vgList": "0:-1:-9",
+      "vpMax": 400,
+      "ipMax": 0.2
+    }
+  },
+  {
+    "id": "6S6B",
+    "name": "6S6B",
+    "model": "koren",
+    "type": "triode",
+    "comment": "Eugene Karpov — Koren triode",
+    "params": {
+      "MU": 25.4,
+      "EX": 1.52,
+      "KG1": 1265.8,
+      "KP": 200.73,
+      "KVB": 300,
+      "VCT": 0,
+      "RGI": 1000,
+      "CCG": 3.3,
+      "CGP": 1.4,
+      "CCP": 3.5
+    },
+    "sweep": {
+      "vgList": "0:-2:-16",
+      "vpMax": 350,
+      "ipMax": 0.1
+    }
+  },
+  {
+    "id": "6S7B",
+    "name": "6S7B",
+    "model": "koren",
+    "type": "triode",
+    "comment": "Eugene Karpov — Koren triode",
+    "params": {
+      "MU": 71.232,
+      "EX": 1.582,
+      "KG1": 945,
+      "KP": 372,
+      "KVB": 10.78125,
+      "VCT": 0.005,
+      "RGI": 1000,
+      "CCG": 3.3,
+      "CGP": 0.7,
+      "CCP": 3.4
+    },
+    "sweep": {
+      "vgList": "0:-1:-7",
+      "vpMax": 400,
+      "ipMax": 0.05
+    }
+  },
+  {
+    "id": "6SN7",
+    "name": "6SN7",
+    "model": "koren",
+    "type": "triode",
+    "comment": "Mithat Konar — Koren triode",
+    "params": {
+      "MU": 22.004,
+      "EX": 1.2128,
+      "KG1": 1213.7,
+      "KP": 203.06,
+      "KVB": 355.09,
+      "VCT": 0,
+      "RGI": 2000,
+      "CCG": 2.4,
+      "CGP": 3.9,
+      "CCP": 0.7
+    },
+    "sweep": {
+      "vgList": "0:-2:-18",
+      "vpMax": 350,
+      "ipMax": 0.1
+    }
+  },
+  {
+    "id": "EC360",
+    "name": "EC360",
+    "model": "koren",
+    "type": "triode",
+    "comment": "Eugene Karpov — Koren triode",
+    "params": {
+      "MU": 3.276,
+      "EX": 1.344,
+      "KG1": 277.5,
+      "KP": 9.75,
+      "KVB": 1.3125,
+      "VCT": 0.02,
+      "RGI": 1000,
+      "CCG": 11.5,
+      "CGP": 3.4,
+      "CCP": 11.5
+    },
+    "sweep": {
+      "vgList": "0:-50:-250",
+      "vpMax": 500,
+      "ipMax": 10
+    }
+  },
+  {
+    "id": "ECC84",
+    "name": "ECC84",
+    "model": "koren",
+    "type": "triode",
+    "comment": "Eugene Karpov — Koren triode",
+    "params": {
+      "MU": 29.568,
+      "EX": 1.218,
+      "KG1": 375,
+      "KP": 81,
+      "KVB": 516,
+      "VCT": 0.172,
+      "RGI": 1000,
+      "CCG": 2.3,
+      "CGP": 1.1,
+      "CCP": 0.5
+    },
+    "sweep": {
+      "vgList": "0:-2:-22",
+      "vpMax": 350,
+      "ipMax": 0.2
+    }
+  },
+  {
+    "id": "ECC85",
+    "name": "ECC85",
+    "model": "koren",
+    "type": "triode",
+    "comment": "Eugene Karpov — Koren triode",
+    "params": {
+      "MU": 76.61,
+      "EX": 1.5,
+      "KG1": 375,
+      "KP": 186,
+      "KVB": 1230,
+      "VCT": 0.42,
+      "RGI": 1000,
+      "CCG": 3.1,
+      "CGP": 1.5,
+      "CCP": 0.17
+    },
+    "sweep": {
+      "vgList": "0:-1:-9",
+      "vpMax": 400,
+      "ipMax": 0.1
+    }
+  },
+  {
+    "id": "ECF82_PT",
+    "name": "ECF82_PT",
+    "model": "koren",
+    "type": "triode",
+    "comment": "Eugene Karpov — Koren triode",
+    "params": {
+      "MU": 56.11,
+      "EX": 1.372,
+      "KG1": 315,
+      "KP": 102,
+      "KVB": 4224,
+      "VCT": 0.05,
+      "RGI": 1000,
+      "CCG": 2.8,
+      "CGP": 1.8,
+      "CCP": 2.5
+    },
+    "sweep": {
+      "vgList": "0:-2:-16",
+      "vpMax": 400,
+      "ipMax": 0.2
+    }
+  },
+  {
+    "id": "ECF82-T",
+    "name": "ECF82-T",
+    "model": "koren",
+    "type": "triode",
+    "comment": "Eugene Karpov — Koren triode",
+    "params": {
+      "MU": 40.656,
+      "EX": 1.386,
+      "KG1": 540,
+      "KP": 114,
+      "KVB": 372,
+      "VCT": 0.2,
+      "RGI": 1000,
+      "CCG": 2.5,
+      "CGP": 0.4,
+      "CCP": 1.8
+    },
+    "sweep": {
+      "vgList": "0:-2:-14",
+      "vpMax": 350,
+      "ipMax": 0.1
+    }
+  },
+  {
+    "id": "EL34",
+    "name": "EL34",
+    "model": "koren",
+    "type": "pentode",
+    "comment": "Norman Koren — Koren pentode (screen current stays up as Ep rises)",
+    "params": {
+      "MU": 11,
+      "EX": 1.35,
+      "KG1": 650,
+      "KP": 60,
+      "KVB": 24,
+      "KG2": 4200,
+      "VCT": 0,
+      "RGI": 1000,
+      "CCG": 15,
+      "CGP": 1,
+      "CCP": 8
+    },
+    "sweep": {
+      "vgList": "0:-5:-30",
+      "vpMax": 500,
+      "ipMax": 0.5,
+      "eg2": 250
+    }
+  },
+  {
+    "id": "EL36_T",
+    "name": "EL36_T",
+    "model": "koren",
+    "type": "triode",
+    "comment": "Eugene Karpov — Koren triode",
+    "params": {
+      "MU": 6.8,
+      "EX": 1.33,
+      "KG1": 330,
+      "KP": 27,
+      "KVB": 0.06,
+      "VCT": 0.001,
+      "RGI": 1000,
+      "CCG": 6.5,
+      "CGP": 7,
+      "CCP": 11
+    },
+    "sweep": {
+      "vgList": "0:-10:-110",
+      "vpMax": 500,
+      "ipMax": 5
+    }
+  },
+  {
+    "id": "EL84_T",
+    "name": "EL84_T",
+    "model": "koren",
+    "type": "triode",
+    "comment": "Eugene Karpov — Koren triode",
+    "params": {
+      "MU": 21.5,
+      "EX": 1.414,
+      "KG1": 352.5,
+      "KP": 96,
+      "KVB": 78,
+      "VCT": 0.0025,
+      "RGI": 1000,
+      "CCG": 6.5,
+      "CGP": 7,
+      "CCP": 11
+    },
+    "sweep": {
+      "vgList": "0:-2:-22",
+      "vpMax": 350,
+      "ipMax": 0.5
+    }
+  },
+  {
+    "id": "EL861_T",
+    "name": "EL861_T",
+    "model": "koren",
+    "type": "triode",
+    "comment": "Eugene Karpov — Koren triode",
+    "params": {
+      "MU": 36.96,
+      "EX": 1.526,
+      "KG1": 375,
+      "KP": 216,
+      "KVB": 78,
+      "VCT": 0.000156,
+      "RGI": 1000,
+      "CCG": 8,
+      "CGP": 2,
+      "CCP": 6.5
+    },
+    "sweep": {
+      "vgList": "0:-1:-11",
+      "vpMax": 350,
+      "ipMax": 0.2
+    }
+  },
+  {
+    "id": "GU50",
+    "name": "GU50",
+    "model": "koren",
+    "type": "pentode",
+    "comment": "Eugene Karpov — Koren pentode (screen current stays up as Ep rises)",
+    "params": {
+      "MU": 8.5,
+      "EX": 1.35,
+      "KG1": 1020,
+      "KP": 15.9,
+      "KVB": 30.3,
+      "KG2": 17000,
+      "VCT": 0,
+      "RGI": 2000,
+      "CCG": 14,
+      "CGP": 0.4,
+      "CCP": 9.2
+    },
+    "sweep": {
+      "vgList": "0:-10:-70",
+      "vpMax": 500,
+      "ipMax": 0.5,
+      "eg2": 250
+    }
+  },
+  {
+    "id": "GU50_T",
+    "name": "GU50_T",
+    "model": "koren",
+    "type": "triode",
+    "comment": "Eugene Karpov — Koren triode",
+    "params": {
+      "MU": 5.41,
+      "EX": 1.366,
+      "KG1": 1350.7,
+      "KP": 34.52,
+      "KVB": 300,
+      "VCT": 0,
+      "RGI": 2000,
+      "CCG": 14,
+      "CGP": 2.58,
+      "CCP": 9.2
+    },
+    "sweep": {
+      "vgList": "0:-10:-110",
+      "vpMax": 500,
+      "ipMax": 1
+    }
+  },
+  {
+    "id": "KT88",
+    "name": "KT88",
+    "model": "koren",
+    "type": "pentode",
+    "comment": "Norman Koren — Koren pentode (screen current stays up as Ep rises)",
+    "params": {
+      "MU": 8.8,
+      "EX": 1.35,
+      "KG1": 730,
+      "KP": 32,
+      "KVB": 16,
+      "KG2": 4800,
+      "VCT": 0,
+      "RGI": 1000,
+      "CCG": 14,
+      "CGP": 0.85,
+      "CCP": 12
+    },
+    "sweep": {
+      "vgList": "0:-5:-45",
+      "vpMax": 500,
+      "ipMax": 1,
+      "eg2": 250
+    }
+  },
+  {
+    "id": "6BR7",
+    "name": "6BR7",
+    "model": "karpov",
+    "type": "pentode",
+    "comment": "Eugene Karpov — Karpov pentode, atan knee, Ig2 = max(0, Ik−Ip)",
+    "params": {
+      "MU": 23.78,
+      "EX": 1.35,
+      "KG1": 3308.3,
+      "KP": 53.79,
+      "KVB": 6,
+      "VCT": 0,
+      "KC": 445,
+      "KNEE": 0,
+      "RGI": 2000,
+      "CCG": 4,
+      "CGP": 0.01,
+      "CCP": 4
+    },
+    "sweep": {
+      "vgList": "0:-1:-8",
+      "vpMax": 400,
+      "ipMax": 0.01,
+      "eg2": 100
+    }
+  },
+  {
+    "id": "6E5P",
+    "name": "6E5P",
+    "model": "karpov",
+    "type": "pentode",
+    "comment": "Eugene Karpov — Karpov pentode, tanh knee, Ig2 = max(0, Ik−Ip)",
+    "params": {
+      "MU": 42.48,
+      "EX": 1.35,
+      "KG1": 145.2,
+      "KP": 191.93,
+      "KVB": 46.4,
+      "VCT": 0,
+      "KC": 24.5,
+      "KNEE": 1,
+      "RGI": 1000,
+      "CCG": 15,
+      "CGP": 0.6,
+      "CCP": 2.5
+    },
+    "sweep": {
+      "vgList": "0:-1:-8",
+      "vpMax": 400,
+      "ipMax": 0.5,
+      "eg2": 250
+    }
+  },
+  {
+    "id": "6F12P_P",
+    "name": "6F12P_P",
+    "model": "karpov",
+    "type": "pentode",
+    "comment": "Eugene Karpov — Karpov pentode, tanh knee, Ig2 = max(0, Ik−Ip) — library RGI is 4500000 ohm",
+    "params": {
+      "MU": 71.45,
+      "EX": 1.35,
+      "KG1": 260.8,
+      "KP": 7396.95,
+      "KVB": 17.9,
+      "VCT": 0,
+      "KC": 75,
+      "KNEE": 1,
+      "RGI": 4500000,
+      "CCG": 6.6,
+      "CGP": 0.02,
+      "CCP": 1.9
+    },
+    "sweep": {
+      "vgList": "0:-0.5:-3",
+      "vpMax": 400,
+      "ipMax": 0.1,
+      "eg2": 200
+    }
+  },
+  {
+    "id": "6F3P_P",
+    "name": "6F3P_P",
+    "model": "karpov",
+    "type": "pentode",
+    "comment": "Eugene Karpov — Karpov pentode, atan knee, Ig2 = max(0, Ik−Ip)",
+    "params": {
+      "MU": 9.12,
+      "EX": 1.35,
+      "KG1": 929,
+      "KP": 219.91,
+      "KVB": 39.3,
+      "VCT": 0,
+      "KC": 253,
+      "KNEE": 0,
+      "RGI": 1000,
+      "CCG": 9.3,
+      "CGP": 0.3,
+      "CCP": 8.5
+    },
+    "sweep": {
+      "vgList": "0:-5:-30",
+      "vpMax": 500,
+      "ipMax": 0.5,
+      "eg2": 250
+    }
+  },
+  {
+    "id": "6F5P-P",
+    "name": "6F5P-P",
+    "model": "karpov",
+    "type": "pentode",
+    "comment": "Eugene Karpov — Karpov pentode, atan knee, Ig2 = max(0, Ik−Ip)",
+    "params": {
+      "MU": 11.5,
+      "EX": 1.204,
+      "KG1": 303,
+      "KP": 34.87,
+      "KVB": 20.1,
+      "VCT": 0,
+      "KC": 85,
+      "KNEE": 0,
+      "RGI": 1000,
+      "CCG": 11.7,
+      "CGP": 0.7,
+      "CCP": 8.8
+    },
+    "sweep": {
+      "vgList": "0:-5:-40",
+      "vpMax": 500,
+      "ipMax": 1,
+      "eg2": 250
+    }
+  },
+  {
+    "id": "6J11P",
+    "name": "6J11P",
+    "model": "karpov",
+    "type": "pentode",
+    "comment": "Eugene Karpov — Karpov pentode, atan knee, Ig2 = max(0, Ik−Ip)",
+    "params": {
+      "MU": 54.4,
+      "EX": 1.358,
+      "KG1": 140,
+      "KP": 5964.95,
+      "KVB": 28.15,
+      "VCT": 0,
+      "KC": 42.2,
+      "KNEE": 0,
+      "RGI": 2000,
+      "CCG": 13.5,
+      "CGP": 0.04,
+      "CCP": 3.45
+    },
+    "sweep": {
+      "vgList": "0:-0.5:-5",
+      "vpMax": 400,
+      "ipMax": 0.5,
+      "eg2": 250
+    }
+  },
+  {
+    "id": "6J2P",
+    "name": "6J2P",
+    "model": "karpov",
+    "type": "pentode",
+    "comment": "Eugene Karpov — Karpov pentode, atan knee, Ig2 = max(0, Ik−Ip)",
+    "params": {
+      "MU": 28.044,
+      "EX": 1.498,
+      "KG1": 1550,
+      "KP": 2918.4,
+      "KVB": 37.2,
+      "VCT": 0,
+      "KC": 406,
+      "KNEE": 0,
+      "RGI": 2000,
+      "CCG": 4.1,
+      "CGP": 0.035,
+      "CCP": 2.35
+    },
+    "sweep": {
+      "vgList": "0:-0.5:-5.5",
+      "vpMax": 400,
+      "ipMax": 0.05,
+      "eg2": 150
+    }
+  },
+  {
+    "id": "6J32P",
+    "name": "6J32P",
+    "model": "karpov",
+    "type": "pentode",
+    "comment": "Eugene Karpov — Karpov pentode, atan knee, Ig2 = max(0, Ik−Ip)",
+    "params": {
+      "MU": 37.72,
+      "EX": 1.526,
+      "KG1": 3140,
+      "KP": 120,
+      "KVB": 8.7,
+      "VCT": 0,
+      "KC": 813,
+      "KNEE": 0,
+      "RGI": 1000,
+      "CCG": 4,
+      "CGP": 0.05,
+      "CCP": 5.5
+    },
+    "sweep": {
+      "vgList": "0:-0.5:-4",
+      "vpMax": 400,
+      "ipMax": 0.01,
+      "eg2": 100
+    }
+  },
+  {
+    "id": "6J38P",
+    "name": "6J38P",
+    "model": "karpov",
+    "type": "pentode",
+    "comment": "Eugene Karpov — Karpov pentode, atan knee, Ig2 = max(0, Ik−Ip)",
+    "params": {
+      "MU": 31.97,
+      "EX": 1.35,
+      "KG1": 546.1,
+      "KP": 5048.68,
+      "KVB": 8.6,
+      "VCT": 0,
+      "KC": 147,
+      "KNEE": 0,
+      "RGI": 2000,
+      "CCG": 5.8,
+      "CGP": 0.02,
+      "CCP": 3.1
+    },
+    "sweep": {
+      "vgList": "0:-1:-8",
+      "vpMax": 400,
+      "ipMax": 0.2,
+      "eg2": 250
+    }
+  },
+  {
+    "id": "6J4",
+    "name": "6J4",
+    "model": "karpov",
+    "type": "pentode",
+    "comment": "Eugene Karpov — Karpov pentode, atan knee, Ig2 = max(0, Ik−Ip)",
+    "params": {
+      "MU": 47.56,
+      "EX": 1.358,
+      "KG1": 430,
+      "KP": 177.6,
+      "KVB": 15,
+      "VCT": 0,
+      "KC": 112,
+      "KNEE": 0,
+      "RGI": 1000,
+      "CCG": 9,
+      "CGP": 0.015,
+      "CCP": 5
+    },
+    "sweep": {
+      "vgList": "0:-0.5:-6",
+      "vpMax": 400,
+      "ipMax": 0.1,
+      "eg2": 200
+    }
+  },
+  {
+    "id": "6J8",
+    "name": "6J8",
+    "model": "karpov",
+    "type": "pentode",
+    "comment": "Eugene Karpov — Karpov pentode, atan knee, Ig2 = max(0, Ik−Ip)",
+    "params": {
+      "MU": 23.616,
+      "EX": 1.204,
+      "KG1": 1760,
+      "KP": 74.4,
+      "KVB": 8.7,
+      "VCT": 0,
+      "KC": 460,
+      "KNEE": 0,
+      "RGI": 1000,
+      "CCG": 6,
+      "CGP": 0.005,
+      "CCP": 7
+    },
+    "sweep": {
+      "vgList": "0:-1:-11",
+      "vpMax": 400,
+      "ipMax": 0.05,
+      "eg2": 150
+    }
+  },
+  {
+    "id": "6J9G-V",
+    "name": "6J9G-V",
+    "model": "karpov",
+    "type": "pentode",
+    "comment": "Eugene Karpov — Karpov pentode, atan knee, Ig2 = max(0, Ik−Ip)",
+    "params": {
+      "MU": 54.448,
+      "EX": 1.344,
+      "KG1": 200,
+      "KP": 159.6,
+      "KVB": 8.1,
+      "VCT": 0,
+      "KC": 25.3,
+      "KNEE": 0,
+      "RGI": 1000,
+      "CCG": 7.5,
+      "CGP": 0.05,
+      "CCP": 3.44
+    },
+    "sweep": {
+      "vgList": "0:-1:-8",
+      "vpMax": 400,
+      "ipMax": 0.2,
+      "eg2": 250
+    }
+  },
+  {
+    "id": "6J9P",
+    "name": "6J9P",
+    "model": "karpov",
+    "type": "pentode",
+    "comment": "Eugene Karpov — Karpov pentode, atan knee, Ig2 = max(0, Ik−Ip)",
+    "params": {
+      "MU": 56,
+      "EX": 1.35,
+      "KG1": 250,
+      "KP": 6709.19,
+      "KVB": 7.9,
+      "VCT": 0,
+      "KC": 72.7,
+      "KNEE": 0,
+      "RGI": 2000,
+      "CCG": 8.5,
+      "CGP": 0.03,
+      "CCP": 3
+    },
+    "sweep": {
+      "vgList": "0:-0.5:-4.5",
+      "vpMax": 400,
+      "ipMax": 0.2,
+      "eg2": 250
+    }
+  },
+  {
+    "id": "6P14P",
+    "name": "6P14P",
+    "model": "karpov",
+    "type": "pentode",
+    "comment": "Eugene Karpov — Karpov pentode, atan knee, Ig2 = max(0, Ik−Ip)",
+    "params": {
+      "MU": 21,
+      "EX": 1.47,
+      "KG1": 895,
+      "KP": 121.2,
+      "KVB": 37.8,
+      "VCT": 0,
+      "KC": 318,
+      "KNEE": 0,
+      "RGI": 1000,
+      "CCG": 11,
+      "CGP": 0.2,
+      "CCP": 7
+    },
+    "sweep": {
+      "vgList": "0:-2:-14",
+      "vpMax": 400,
+      "ipMax": 0.2,
+      "eg2": 250
+    }
+  },
+  {
+    "id": "6P15P_P",
+    "name": "6P15P_P",
+    "model": "karpov",
+    "type": "pentode",
+    "comment": "Eugene Karpov — Karpov pentode, atan knee, Ig2 = max(0, Ik−Ip)",
+    "params": {
+      "MU": 27.37,
+      "EX": 1.35,
+      "KG1": 433.9,
+      "KP": 188.23,
+      "KVB": 16.6,
+      "VCT": 0,
+      "KC": 128.5,
+      "KNEE": 0,
+      "RGI": 1000,
+      "CCG": 13.5,
+      "CGP": 0.07,
+      "CCP": 7
+    },
+    "sweep": {
+      "vgList": "0:-1:-11",
+      "vpMax": 400,
+      "ipMax": 0.2,
+      "eg2": 250
+    }
+  },
+  {
+    "id": "6P18P_P",
+    "name": "6P18P_P",
+    "model": "karpov",
+    "type": "pentode",
+    "comment": "Eugene Karpov — Karpov pentode, tanh knee, Ig2 = max(0, Ik−Ip)",
+    "params": {
+      "MU": 14.95,
+      "EX": 1.35,
+      "KG1": 568,
+      "KP": 37.41,
+      "KVB": 34.4,
+      "VCT": 0,
+      "KC": 150,
+      "KNEE": 1,
+      "RGI": 1000,
+      "CCG": 11.5,
+      "CGP": 0.2,
+      "CCP": 6
+    },
+    "sweep": {
+      "vgList": "0:-5:-30",
+      "vpMax": 500,
+      "ipMax": 0.5,
+      "eg2": 250
+    }
+  },
+  {
+    "id": "6P9",
+    "name": "6P9",
+    "model": "karpov",
+    "type": "pentode",
+    "comment": "Eugene Karpov — Karpov pentode, atan knee, Ig2 = max(0, Ik−Ip)",
+    "params": {
+      "MU": 21.976,
+      "EX": 1.344,
+      "KG1": 580,
+      "KP": 286.8,
+      "KVB": 23.5,
+      "VCT": 0,
+      "KC": 161,
+      "KNEE": 0,
+      "RGI": 1000,
+      "CCG": 11.15,
+      "CGP": 0.06,
+      "CCP": 6.65
+    },
+    "sweep": {
+      "vgList": "0:-1:-12",
+      "vpMax": 400,
+      "ipMax": 0.2,
+      "eg2": 250
+    }
+  },
+  {
+    "id": "E180F",
+    "name": "E180F",
+    "model": "karpov",
+    "type": "pentode",
+    "comment": "Eugene Karpov — Karpov pentode, atan knee, Ig2 = max(0, Ik−Ip)",
+    "params": {
+      "MU": 61,
+      "EX": 1.3439,
+      "KG1": 250,
+      "KP": 6709,
+      "KVB": 15.75,
+      "VCT": 0,
+      "KC": 68.2,
+      "KNEE": 0,
+      "RGI": 2000,
+      "CCG": 7.5,
+      "CGP": 0.03,
+      "CCP": 3.5
+    },
+    "sweep": {
+      "vgList": "0:-0.5:-3.5",
+      "vpMax": 400,
+      "ipMax": 0.1,
+      "eg2": 200
+    }
+  },
+  {
+    "id": "ECF82",
+    "name": "ECF82",
+    "model": "karpov",
+    "type": "pentode",
+    "comment": "Eugene Karpov — Karpov pentode, atan knee, Ig2 = max(0, Ik−Ip)",
+    "params": {
+      "MU": 83.968,
+      "EX": 1.498,
+      "KG1": 510,
+      "KP": 61.8,
+      "KVB": 19.5,
+      "VCT": 0,
+      "KC": 67,
+      "KNEE": 0,
+      "RGI": 2000,
+      "CCG": 5,
+      "CGP": 0.015,
+      "CCP": 2.6
+    },
+    "sweep": {
+      "vgList": "0:-1:-11",
+      "vpMax": 400,
+      "ipMax": 0.1,
+      "eg2": 200
+    }
+  },
+  {
+    "id": "EF184",
+    "name": "EF184",
+    "model": "karpov",
+    "type": "pentode",
+    "comment": "Eugene Karpov — Karpov pentode, atan knee, Ig2 = max(0, Ik−Ip)",
+    "params": {
+      "MU": 70.848,
+      "EX": 1.358,
+      "KG1": 162.5,
+      "KP": 321.6,
+      "KVB": 11.4,
+      "VCT": 0,
+      "KC": 45,
+      "KNEE": 0,
+      "RGI": 2000,
+      "CCG": 10,
+      "CGP": 0.0055,
+      "CCP": 3
+    },
+    "sweep": {
+      "vgList": "0:-0.5:-5",
+      "vpMax": 400,
+      "ipMax": 0.2,
+      "eg2": 250
+    }
+  },
+  {
+    "id": "EF80",
+    "name": "EF80",
+    "model": "karpov",
+    "type": "pentode",
+    "comment": "Eugene Karpov — Karpov pentode, atan knee, Ig2 = max(0, Ik−Ip)",
+    "params": {
+      "MU": 89.22,
+      "EX": 0.966,
+      "KG1": 210,
+      "KP": 159.6,
+      "KVB": 20.7,
+      "VCT": 0,
+      "KC": 51,
+      "KNEE": 0,
+      "RGI": 2000,
+      "CCG": 6.9,
+      "CGP": 0.007,
+      "CCP": 0.012
+    },
+    "sweep": {
+      "vgList": "0:-1:-7",
+      "vpMax": 400,
+      "ipMax": 0.05,
+      "eg2": 200
+    }
+  },
+  {
+    "id": "EF800",
+    "name": "EF800",
+    "model": "karpov",
+    "type": "pentode",
+    "comment": "Eugene Karpov — Karpov pentode, atan knee, Ig2 = max(0, Ik−Ip)",
+    "params": {
+      "MU": 36.736,
+      "EX": 1.6939,
+      "KG1": 1360,
+      "KP": 1305.6,
+      "KVB": 32.1,
+      "VCT": 0,
+      "KC": 370,
+      "KNEE": 0,
+      "RGI": 2000,
+      "CCG": 8.1,
+      "CGP": 0.06,
+      "CCP": 3.6
+    },
+    "sweep": {
+      "vgList": "0:-0.5:-4",
+      "vpMax": 400,
+      "ipMax": 0.05,
+      "eg2": 150
+    }
+  },
+  {
+    "id": "EL861",
+    "name": "EL861",
+    "model": "karpov",
+    "type": "pentode",
+    "comment": "Eugene Karpov — Karpov pentode, atan knee, Ig2 = max(0, Ik−Ip)",
+    "params": {
+      "MU": 36.736,
+      "EX": 1.498,
+      "KG1": 680,
+      "KP": 278.4,
+      "KVB": 9,
+      "VCT": 0,
+      "KC": 175,
+      "KNEE": 0,
+      "RGI": 2000,
+      "CCG": 11.5,
+      "CGP": 0.019,
+      "CCP": 6.5
+    },
+    "sweep": {
+      "vgList": "0:-0.5:-6",
+      "vpMax": 400,
+      "ipMax": 0.1,
+      "eg2": 200
+    }
+  },
+  {
+    "id": "5C3S",
+    "name": "5C3S",
+    "model": "duncan",
+    "type": "diode",
+    "comment": "Eugene Karpov — Duncan rectifier, Ia = K·Vak^EX",
+    "params": {
+      "K": 0.00079,
+      "EX": 1.45213,
+      "CCP": 5
+    },
+    "sweep": {
+      "vgList": "0",
+      "vpMax": 100,
+      "ipMax": 1
+    }
+  },
+  {
+    "id": "5C4S",
+    "name": "5C4S",
+    "model": "duncan",
+    "type": "diode",
+    "comment": "Eugene Karpov — Duncan rectifier, Ia = K·Vak^EX",
+    "params": {
+      "K": 0.00256,
+      "EX": 1.32431,
+      "CCP": 5
+    },
+    "sweep": {
+      "vgList": "0",
+      "vpMax": 100,
+      "ipMax": 2
+    }
+  },
+  {
+    "id": "5C8S",
+    "name": "5C8S",
+    "model": "duncan",
+    "type": "diode",
+    "comment": "Eugene Karpov — Duncan rectifier, Ia = K·Vak^EX",
+    "params": {
+      "K": 0.00135,
+      "EX": 1.44725,
+      "CCP": 5
+    },
+    "sweep": {
+      "vgList": "0",
+      "vpMax": 100,
+      "ipMax": 2
+    }
+  },
+  {
+    "id": "5V4GA",
+    "name": "5V4GA",
+    "model": "duncan",
+    "type": "diode",
+    "comment": "Duncan Munro — Duncan rectifier, Ia = K·Vak^EX",
+    "params": {
+      "K": 0.0014,
+      "EX": 1.5
+    },
+    "sweep": {
+      "vgList": "0",
+      "vpMax": 100,
+      "ipMax": 2
+    }
+  },
+  {
+    "id": "5Y3GT",
+    "name": "5Y3GT",
+    "model": "duncan",
+    "type": "diode",
+    "comment": "Duncan Munro — Duncan rectifier, Ia = K·Vak^EX",
+    "params": {
+      "K": 0.000269,
+      "EX": 1.5
+    },
+    "sweep": {
+      "vgList": "0",
+      "vpMax": 100,
+      "ipMax": 0.5
+    }
+  },
+  {
+    "id": "6C5S",
+    "name": "6C5S",
+    "model": "duncan",
+    "type": "diode",
+    "comment": "Eugene Karpov — Duncan rectifier, Ia = K·Vak^EX",
+    "params": {
+      "K": 0.00111,
+      "EX": 1.37199,
+      "CCP": 5
+    },
+    "sweep": {
+      "vgList": "0",
+      "vpMax": 100,
+      "ipMax": 1
+    }
+  },
+  {
+    "id": "6D20P",
+    "name": "6D20P",
+    "model": "duncan",
+    "type": "diode",
+    "comment": "Eugene Karpov — Duncan rectifier, Ia = K·Vak^EX",
+    "params": {
+      "K": 0.00409,
+      "EX": 1.39877,
+      "CCP": 8
+    },
+    "sweep": {
+      "vgList": "0",
+      "vpMax": 100,
+      "ipMax": 5
+    }
+  },
+  {
+    "id": "6D22S",
+    "name": "6D22S",
+    "model": "duncan",
+    "type": "diode",
+    "comment": "Duncan Munro — Duncan rectifier, Ia = K·Vak^EX",
+    "params": {
+      "K": 0.006769,
+      "EX": 1.2646,
+      "CCP": 12
+    },
+    "sweep": {
+      "vgList": "0",
+      "vpMax": 100,
+      "ipMax": 5
+    }
+  },
+  {
+    "id": "6X2P",
+    "name": "6X2P",
+    "model": "duncan",
+    "type": "diode",
+    "comment": "Eugene Karpov — Duncan rectifier, Ia = K·Vak^EX",
+    "params": {
+      "K": 0.00214,
+      "EX": 1.35039,
+      "CCP": 3.4
+    },
+    "sweep": {
+      "vgList": "0",
+      "vpMax": 100,
+      "ipMax": 2
+    }
   },
   {
     "id": "ayumi-12AX7",
@@ -141,7 +2796,11 @@
       "CGP": 2.4,
       "CCP": 0.9
     },
-    "sweep": { "vgList": "0:-0.5:-4", "vpMax": 400, "ipMax": 0.006 }
+    "sweep": {
+      "vgList": "0:-0.5:-4",
+      "vpMax": 400,
+      "ipMax": 0.006
+    }
   },
   {
     "id": "immler-12AX7",
@@ -161,7 +2820,11 @@
       "CGP": 2.4,
       "CCP": 0.9
     },
-    "sweep": { "vgList": "0:-0.5:-4", "vpMax": 400, "ipMax": 0.006 }
+    "sweep": {
+      "vgList": "0:-0.5:-4",
+      "vpMax": 400,
+      "ipMax": 0.006
+    }
   },
   {
     "id": "ridge-12AX7",
@@ -181,7 +2844,11 @@
       "CGP": 2.4,
       "CCP": 0.9
     },
-    "sweep": { "vgList": "0:-0.5:-4", "vpMax": 400, "ipMax": 0.006 }
+    "sweep": {
+      "vgList": "0:-0.5:-4",
+      "vpMax": 400,
+      "ipMax": 0.006
+    }
   },
   {
     "id": "ridge-6550",
@@ -203,6 +2870,11 @@
       "CGP": 0.85,
       "CCP": 12
     },
-    "sweep": { "vgList": "0:-5:-50", "vpMax": 500, "ipMax": 0.4, "eg2": 300 }
+    "sweep": {
+      "vgList": "0:-5:-50",
+      "vpMax": 500,
+      "ipMax": 0.4,
+      "eg2": 300
+    }
   }
 ]

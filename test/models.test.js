@@ -1,18 +1,23 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import {
   listModels,
   getModel,
+  defaultParams,
   plateCurrent,
   screenCurrent,
   screenCurveFamily,
   generateSubckt,
+  clampParams,
+  normalizeType,
 } from '../lib/tube.js';
+import { softplus } from '../lib/models/math.js';
 
 describe('model registry', () => {
   it('lists koren, ayumi, immler, ridge', () => {
     const ids = listModels().map((m) => m.id);
-    assert.deepEqual(ids, ['koren', 'ayumi', 'immler', 'ridge']);
+    assert.deepEqual(ids, ['koren', 'karpov', 'duncan', 'ayumi', 'immler', 'ridge']);
   });
 });
 
@@ -138,5 +143,119 @@ describe('ridge plate/screen split', () => {
       return low / high;
     };
     assert.ok(ratio(80) < ratio(5));
+  });
+});
+
+describe('karpov residual screen', () => {
+  const p = {
+    MU: 21,
+    EX: 1.47,
+    KG1: 895,
+    KP: 121.2,
+    KC: 318,
+    KVB: 37.8,
+    VCT: 0,
+    KNEE: 0,
+  };
+
+  function expected(Eg, Ep, Eg2, params, knee) {
+    const eg = Eg + (params.VCT ?? 0);
+    const arg = params.KP * (1 / params.MU + eg / Eg2);
+    const E1 = (Eg2 / params.KP) * softplus(arg);
+    const ip = ((2 * Math.pow(Math.max(E1, 0), params.EX)) / params.KG1) * knee;
+    const drive = eg + Eg2 / params.MU;
+    const ik = drive > 0 ? Math.pow(drive, params.EX) / params.KC : 0;
+    return { ip, ig2: Math.max(0, ik - ip) };
+  }
+
+  it('matches the atan residual-screen expression', () => {
+    const Eg = -4;
+    const Ep = 200;
+    const Eg2 = 250;
+    const want = expected(Eg, Ep, Eg2, p, Math.atan(Ep / p.KVB));
+    const ip = plateCurrent('karpov', 'pentode', Eg, Ep, Eg2, p);
+    const ig2 = screenCurrent('karpov', 'pentode', Eg, Ep, Eg2, p);
+    assert.ok(Math.abs(ip - want.ip) < 1e-12, `ip ${ip} vs ${want.ip}`);
+    assert.ok(Math.abs(ig2 - want.ig2) < 1e-12, `ig2 ${ig2} vs ${want.ig2}`);
+  });
+
+  it('gives the screen the current the plate has not taken', () => {
+    const eg2 = 250;
+    const low = screenCurrent('karpov', 'pentode', -2, 5, eg2, p);
+    const high = screenCurrent('karpov', 'pentode', -2, 400, eg2, p);
+    const ip = plateCurrent('karpov', 'pentode', -2, 400, eg2, p);
+    assert.ok(low > high);
+    assert.ok(ip > 0);
+    assert.ok(low > 0);
+  });
+
+  it('uses the library tanh knee when KNEE is set', () => {
+    const tanh = { ...p, KNEE: 1 };
+    const Ep = 80;
+    const Eg2 = 250;
+    const knee = 1.57 * Math.tanh((2 * Ep) / (p.KVB * 3.14159));
+    const want = expected(0, Ep, Eg2, tanh, knee);
+    const ip = plateCurrent('karpov', 'pentode', 0, Ep, Eg2, tanh);
+    assert.ok(Math.abs(ip - want.ip) < 1e-12);
+    assert.ok(Math.abs(ip - plateCurrent('karpov', 'pentode', 0, Ep, Eg2, p)) > 1e-6);
+    const text = generateSubckt({
+      modelId: 'karpov',
+      name: '6E5P',
+      type: 'pentode',
+      params: tanh,
+    });
+    assert.match(text, /TANH\(2\*V\(1,3\)\/\(KVB\*3\.14159\)\)/);
+    assert.match(text, /URAMP\(PWR\(URAMP/);
+  });
+});
+
+describe('duncan rectifier', () => {
+  it('is K times Vak to the EX, and zero when reverse biased', () => {
+    const p = { K: 1.4e-3, EX: 1.5 };
+    const ia = plateCurrent('duncan', 'diode', 0, 40, 0, p);
+    assert.ok(Math.abs(ia - p.K * Math.pow(40, p.EX)) < 1e-15);
+    assert.equal(plateCurrent('duncan', 'diode', 0, -10, 0, p), 0);
+  });
+
+  it('exports a two-pin subckt and omits a zero parallel cap', () => {
+    const text = generateSubckt({
+      modelId: 'duncan',
+      name: '5V4GA',
+      type: 'diode',
+      params: { K: 1.4e-3, EX: 1.5, CCP: 0 },
+    });
+    assert.match(text, /\.SUBCKT 5V4GA A K/);
+    assert.match(text, /PWR\(V\(A,K\),EX\)\+PWRS\(V\(A,K\),EX\)\)\/2/);
+    assert.doesNotMatch(text, /\nCP /);
+  });
+});
+
+describe('tube presets', () => {
+  const presets = JSON.parse(
+    readFileSync(new URL('../presets/tubes.json', import.meta.url), 'utf8'),
+  );
+
+  it('keeps every published parameter inside the model limits', () => {
+    const ids = new Set();
+    for (const preset of presets) {
+      assert.ok(!ids.has(preset.id), `duplicate ${preset.id}`);
+      ids.add(preset.id);
+      const type = normalizeType(preset.type);
+      assert.ok(getModel(preset.model).supports.includes(type), preset.id);
+      const params = clampParams(preset.model, {
+        ...defaultParams(preset.model, type),
+        ...preset.params,
+      });
+      for (const [key, value] of Object.entries(preset.params)) {
+        if (getModel(preset.model).limits?.[key] == null) continue;
+        assert.ok(
+          Math.abs(params[key] - value) < 1e-9,
+          `${preset.id} ${key} clamped from ${value} to ${params[key]}`,
+        );
+      }
+      const ep = (preset.sweep?.vpMax ?? 200) * 0.5;
+      const ip = plateCurrent(preset.model, type, 0, ep, preset.sweep?.eg2 ?? 200, params);
+      assert.ok(Number.isFinite(ip) && ip > 0, `${preset.id} ip=${ip}`);
+    }
   });
 });

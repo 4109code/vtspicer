@@ -9,6 +9,7 @@ import {
   listModels,
   generateSubckt,
   normalizeType,
+  parseSpiceImport,
 } from '/lib/tube.js';
 import { Plot } from './plot.js';
 import { Calibrator } from './calibrate.js';
@@ -292,6 +293,7 @@ function applyPreset(preset) {
   rebuildSliders();
   setParams(state.params);
   updateMultiVisibility();
+  refreshPresetOptions();
 }
 
 function persist() {
@@ -485,23 +487,85 @@ function bindUi() {
     loadImageBlob(e.target.files?.[0]);
   });
 
+  function isTypingTarget(target) {
+    if (!(target instanceof HTMLElement)) return false;
+    if (target instanceof HTMLTextAreaElement) return !target.readOnly;
+    if (target instanceof HTMLInputElement) {
+      return ['text', 'number', 'search', 'email', 'password'].includes(target.type);
+    }
+    return Boolean(target.isContentEditable);
+  }
+
+  function looksLikeSpice(text) {
+    if (/\bPARAMS\s*:/i.test(text) || /\.SUBCKT\b/i.test(text) || /\.PARAM\b/i.test(text)) return true;
+    return /[A-Za-z_]\w*\s*=\s*[+-]?\d/.test(text) && parseSpiceImport(text).ok;
+  }
+
+  function loadSpiceText(text) {
+    const parsed = parseSpiceImport(text);
+    const note = $('modelNote');
+    if (!parsed.ok) {
+      note.hidden = false;
+      note.textContent = parsed.reason;
+      return false;
+    }
+    const model = getModel(parsed.modelId);
+    const merged = clampParams(parsed.modelId, {
+      ...defaultParams(parsed.modelId, parsed.type),
+      ...parsed.params,
+    });
+    const clamped = Object.keys(parsed.params).filter((key) => {
+      if (model.limits?.[key] == null) return false;
+      return merged[key] !== parsed.params[key];
+    });
+    const label = parsed.name ? `${parsed.name} as ${model.label}` : model.label;
+    let comment = `Loaded ${label} ${parsed.type}.`;
+    if (clamped.length) comment += ` Clamped ${clamped.join(', ')}.`;
+    applyPreset({
+      model: parsed.modelId,
+      name: parsed.name || state.name,
+      type: parsed.type,
+      params: parsed.params,
+      comment,
+    });
+    $('presetSelect').value = '';
+    return true;
+  }
+
+  $('btnPasteParams').addEventListener('click', async () => {
+    const btn = $('btnPasteParams');
+    try {
+      const text = await navigator.clipboard.readText();
+      if (!loadSpiceText(text)) return;
+      btn.textContent = 'Loaded';
+      setTimeout(() => {
+        btn.textContent = 'Paste params';
+      }, 1200);
+    } catch {
+      const note = $('modelNote');
+      note.hidden = false;
+      note.textContent = 'Could not read the clipboard. Click the page and press Ctrl+V.';
+    }
+  });
+
   window.addEventListener('paste', (e) => {
     const items = [...(e.clipboardData?.items || [])];
     const imageItem = items.find((i) => i.type.startsWith('image/'));
-    if (!imageItem) return;
+    const text = e.clipboardData?.getData('text/plain') || '';
+    const typing = isTypingTarget(e.target);
 
-    const t = e.target;
-    const inEditable =
-      t instanceof HTMLInputElement ||
-      t instanceof HTMLTextAreaElement ||
-      Boolean(t?.isContentEditable);
-    if (inEditable && items.some((i) => i.type === 'text/plain')) return;
+    if (imageItem && !(typing && text)) {
+      const file = imageItem.getAsFile();
+      if (!file) return;
+      e.preventDefault();
+      if (plot.image && !confirm('Replace the current datasheet image?')) return;
+      loadImageBlob(file);
+      return;
+    }
 
-    const file = imageItem.getAsFile();
-    if (!file) return;
+    if (!text || typing || !looksLikeSpice(text)) return;
     e.preventDefault();
-    if (plot.image && !confirm('Replace the current datasheet image?')) return;
-    loadImageBlob(file);
+    loadSpiceText(text);
   });
 
   $('btnCopy').addEventListener('click', async () => {

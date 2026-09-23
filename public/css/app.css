@@ -1,0 +1,278 @@
+:root {
+  --bg: #1a1c1e;
+  --panel: #24282c;
+  --border: #3a4148;
+  --text: #e8eaed;
+  --muted: #9aa3ad;
+  --accent: #d97757;
+  --accent-dim: #a85a40;
+  --plot-bg: #f4f1ea;
+  --font: "Segoe UI", system-ui, sans-serif;
+  --mono: "Cascadia Code", "Consolas", monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  min-height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+}
+
+.top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: calc(0.15rem + 2px) 1.25rem calc(0.15rem + 2px) 0.5rem;
+  border-bottom: 1px solid var(--border);
+  background: #121416;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.logo {
+  width: 64px;
+  height: 64px;
+  flex: none;
+  display: block;
+}
+
+.top h1 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 650;
+  letter-spacing: 0.02em;
+}
+
+.tag {
+  margin: 0.25rem 0 0;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.credit {
+  margin: 0;
+  flex: none;
+  color: var(--muted);
+  opacity: 0.4;
+  font-size: 0.75rem;
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr) 300px;
+  gap: 0;
+  min-height: calc(100vh - 80px);
+}
+
+.panel {
+  background: var(--panel);
+  border-right: 1px solid var(--border);
+  padding: 0.75rem;
+  overflow-y: auto;
+  max-height: calc(100vh - 80px);
+}
+
+.panel.export {
+  border-right: none;
+  border-left: 1px solid var(--border);
+}
+
+section {
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--border);
+}
+
+section:last-child {
+  border-bottom: none;
+}
+
+h2 {
+  margin: 0 0 0.5rem;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+label {
+  display: block;
+  font-size: 0.8rem;
+  margin-bottom: 0.45rem;
+  color: var(--text);
+}
+
+label.check {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+input[type="text"],
+input[type="number"],
+select,
+textarea {
+  width: 100%;
+  margin-top: 0.2rem;
+  padding: 0.35rem 0.45rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: #16181a;
+  color: var(--text);
+  font: inherit;
+}
+
+input[type="range"] {
+  width: 100%;
+}
+
+input[type="file"] {
+  width: 100%;
+  font-size: 0.75rem;
+  margin-bottom: 0.4rem;
+}
+
+.param-row {
+  display: grid;
+  grid-template-columns: 48px 1fr 72px;
+  gap: 0.35rem;
+  align-items: center;
+  margin-bottom: 0.35rem;
+  font-size: 0.75rem;
+}
+
+.param-row input[type="number"] {
+  margin: 0;
+  padding: 0.2rem;
+  cursor: ew-resize;
+  user-select: none;
+}
+
+.param-row input[type="number"].scrubbing {
+  cursor: grabbing;
+  background: #1e2a22;
+  border-color: var(--accent);
+}
+
+.grid2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.4rem;
+}
+
+.row {
+  display: flex;
+  gap: 0.4rem;
+  margin: 0.4rem 0;
+  flex-wrap: wrap;
+}
+
+button {
+  border: 1px solid var(--border);
+  background: #2c3238;
+  color: var(--text);
+  border-radius: 4px;
+  padding: 0.35rem 0.65rem;
+  font: inherit;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #363d44;
+}
+
+button.primary {
+  background: var(--accent-dim);
+  border-color: var(--accent);
+}
+
+button.primary:hover {
+  background: var(--accent);
+}
+
+button.danger {
+  background: #5c1f1a;
+  border-color: #c01c28;
+  color: #ffdad6;
+}
+
+button.danger:hover {
+  background: #c01c28;
+  color: #fff;
+}
+
+.hint {
+  font-size: 0.72rem;
+  color: var(--muted);
+  line-height: 1.35;
+}
+
+.draw-controls {
+  margin-top: 0;
+  padding: 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: #1c2228;
+}
+
+.canvas-wrap {
+  display: flex;
+  flex-direction: column;
+  background: #0e1012;
+  min-width: 0;
+  position: relative;
+}
+
+body.is-calibrating #plot {
+  cursor: cell;
+}
+
+#plot {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: calc(100vh - 118px);
+  background: var(--plot-bg);
+  cursor: crosshair;
+  touch-action: none;
+}
+
+.toolbar {
+  padding: 0.35rem 0.75rem;
+  border-top: 1px solid var(--border);
+}
+
+#spiceOut {
+  height: 340px;
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  line-height: 1.35;
+  resize: vertical;
+}
+
+@media (max-width: 1100px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+
+  .panel {
+    max-height: none;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .panel.export {
+    border-left: none;
+  }
+}

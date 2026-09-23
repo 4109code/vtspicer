@@ -1,0 +1,16 @@
+services:
+  app:
+    build: .
+    ports:
+      - "80:80"
+    environment:
+      PORT: 80
+    cap_add:
+      - NET_BIND_SERVICE
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:80/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s

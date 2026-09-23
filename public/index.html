@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>VTSpicer: Vacuum tube modeling</title>
+  <link rel="icon" href="/tube-logo.png" type="image/png" />
+  <link rel="stylesheet" href="/css/app.css" />
+</head>
+<body>
+  <header class="top">
+    <div class="brand">
+      <img class="logo" src="/tube-logo.png" alt="" width="64" height="64" />
+      <div>
+        <h1>VTSpicer: Vacuum tube modeling</h1>
+        <p class="tag">Match plate curves with Koren, Ayumi, Immler, or Ridge equations and export a SPICE <code>.SUBCKT</code></p>
+      </div>
+    </div>
+    <p class="credit">by nfrolov</p>
+  </header>
+
+  <main class="layout">
+    <aside class="panel">
+      <section>
+        <h2>Tube</h2>
+        <label>Name <input id="tubeName" type="text" value="12AX7" /></label>
+        <label>Model formula
+          <select id="modelSelect">
+            <option value="koren">Koren</option>
+            <option value="ayumi">Ayumi</option>
+            <option value="immler">Immler</option>
+            <option value="ridge">Ridge (new)</option>
+          </select>
+        </label>
+        <label>Type
+          <select id="tubeType">
+            <option value="triode">Triode</option>
+            <option value="pentode">Pentode / tetrode</option>
+          </select>
+        </label>
+        <p id="modelNote" class="hint" hidden></p>
+        <label>Preset
+          <select id="presetSelect">
+            <option value="">— custom —</option>
+          </select>
+        </label>
+      </section>
+
+      <section>
+        <h2>Datasheet image</h2>
+        <input id="imageInput" type="file" accept="image/*" />
+        <p class="hint">Or paste from clipboard (Ctrl/Cmd+V).</p>
+        <label>Image opacity <input id="imageOpacity" type="range" min="0" max="100" value="55" /></label>
+        <div class="row">
+          <button type="button" id="btnCalibrate" class="primary">Calibrate axes</button>
+          <button type="button" id="btnClearImage">Clear image</button>
+        </div>
+        <p id="calibStatus" class="hint">No calibration yet. Click origin (0), then Vpmax, then IpMax.</p>
+        <div class="grid2">
+          <label>Vp max (V) <input id="vpMax" type="number" value="400" step="10" /></label>
+          <label>Ip max (mA) <input id="ipMax" type="number" value="6" step="0.1" /></label>
+        </div>
+      </section>
+
+      <section>
+        <h2>Sweep</h2>
+        <label>Vg list <input id="vgList" type="text" value="0:-0.5:-4" title="start:step:end or comma list" /></label>
+        <label id="eg2Row">Vg2 (V) <input id="eg2" type="number" value="300" step="10" /></label>
+        <label id="showScreenRow" class="check"><input type="checkbox" id="showScreenCurves" checked /> Show screen (Ig2) curves</label>
+        <label>Vp steps <input id="vpSteps" type="number" value="120" min="20" max="400" /></label>
+        <label>Curve color <input id="curveColor" type="color" value="#c0392b" /></label>
+      </section>
+
+      <section>
+        <h2>Parameters</h2>
+        <p class="hint">Drag a value sideways: near = coarse, away = fine. Shift finer, Alt coarser. Wheel works too.</p>
+        <div id="paramSliders"></div>
+      </section>
+
+      <section>
+        <h2>Vg guides</h2>
+        <div id="drawControls" class="draw-controls">
+          <label>Active Vg (V) <input id="drawVg" type="number" value="0" step="0.5" /></label>
+          <label class="check"><input type="checkbox" id="drawAutoFit" checked /> Auto-fit after each point</label>
+          <div class="row">
+            <button type="button" id="btnFitGuides" class="primary">Fit formula</button>
+            <button type="button" id="btnUndoGuide">Undo point</button>
+            <button type="button" id="btnClearGuides">Clear guides</button>
+          </div>
+          <p id="drawStatus" class="hint">Click the plot to place a few points along each datasheet Vg curve. Change Active Vg for the next curve, then Fit.</p>
+        </div>
+      </section>
+    </aside>
+
+    <section class="canvas-wrap" id="canvasWrap">
+      <canvas id="plot" width="900" height="640"></canvas>
+      <div class="toolbar">
+        <span id="cursorReadout" class="hint">—</span>
+      </div>
+    </section>
+
+    <aside class="panel export">
+      <section>
+        <h2>SPICE .SUBCKT</h2>
+        <div class="row">
+          <button type="button" id="btnCopy" class="primary">Copy</button>
+          <button type="button" id="btnDownload">Download .lib</button>
+        </div>
+        <textarea id="spiceOut" spellcheck="false" readonly></textarea>
+      </section>
+      <section>
+        <h2>Capacitances / RGI</h2>
+        <div class="grid2">
+          <label>CCG (pF) <input id="CCG" type="number" value="2.3" step="0.1" /></label>
+          <label>CGP (pF) <input id="CGP" type="number" value="2.4" step="0.1" /></label>
+          <label>CCP (pF) <input id="CCP" type="number" value="0.9" step="0.1" /></label>
+          <label>RGI (Ω) <input id="RGI" type="number" value="2000" step="100" /></label>
+        </div>
+      </section>
+    </aside>
+  </main>
+
+  <script type="module" src="/js/app.js"></script>
+</body>
+</html>

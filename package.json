@@ -1,0 +1,25 @@
+{
+  "name": "vtspicer",
+  "version": "1.0.0",
+  "description": "VTSpicer: Vacuum tube modeling — match plate curves and export .SUBCKT",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "keywords": [
+    "vacuum-tube",
+    "spice",
+    "koren",
+    "triode",
+    "pentode"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.21.2"
+  }
+}

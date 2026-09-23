@@ -1,0 +1,208 @@
+[
+  {
+    "id": "12AX7",
+    "name": "12AX7",
+    "model": "koren",
+    "type": "triode",
+    "comment": "Norman Koren Table 1",
+    "params": {
+      "MU": 100,
+      "EX": 1.4,
+      "KG1": 1060,
+      "KP": 600,
+      "KVB": 300,
+      "VCT": 0,
+      "RGI": 2000,
+      "CCG": 2.3,
+      "CGP": 2.4,
+      "CCP": 0.9
+    },
+    "sweep": { "vgList": "0:-0.5:-4", "vpMax": 400, "ipMax": 0.006 }
+  },
+  {
+    "id": "12AU7",
+    "name": "12AU7",
+    "model": "koren",
+    "type": "triode",
+    "comment": "Norman Koren Table 1",
+    "params": {
+      "MU": 21.5,
+      "EX": 1.3,
+      "KG1": 1180,
+      "KP": 84,
+      "KVB": 300,
+      "VCT": 0,
+      "RGI": 2000,
+      "CCG": 2.3,
+      "CGP": 2.2,
+      "CCP": 1.0
+    },
+    "sweep": { "vgList": "0:-4:-20", "vpMax": 400, "ipMax": 0.03 }
+  },
+  {
+    "id": "6DJ8",
+    "name": "6DJ8",
+    "model": "koren",
+    "type": "triode",
+    "comment": "Norman Koren Table 1",
+    "params": {
+      "MU": 33,
+      "EX": 1.3,
+      "KG1": 300,
+      "KP": 120,
+      "KVB": 300,
+      "VCT": 0,
+      "RGI": 2000,
+      "CCG": 2.3,
+      "CGP": 2.2,
+      "CCP": 1.0
+    },
+    "sweep": { "vgList": "0:-1:-6", "vpMax": 300, "ipMax": 0.03 }
+  },
+  {
+    "id": "6550",
+    "name": "6550",
+    "model": "koren",
+    "type": "pentode",
+    "comment": "Norman Koren Table 1",
+    "params": {
+      "MU": 7.9,
+      "EX": 1.35,
+      "KG1": 890,
+      "KG2": 4200,
+      "KP": 60,
+      "KVB": 24,
+      "VCT": 0,
+      "RGI": 1000,
+      "CCG": 14,
+      "CGP": 0.85,
+      "CCP": 12
+    },
+    "sweep": { "vgList": "0:-5:-50", "vpMax": 500, "ipMax": 0.4, "eg2": 300 }
+  },
+  {
+    "id": "KT88",
+    "name": "KT88",
+    "model": "koren",
+    "type": "pentode",
+    "comment": "Norman Koren Table 1",
+    "params": {
+      "MU": 8.8,
+      "EX": 1.35,
+      "KG1": 730,
+      "KG2": 4200,
+      "KP": 32,
+      "KVB": 16,
+      "VCT": 0,
+      "RGI": 1000,
+      "CCG": 14,
+      "CGP": 0.85,
+      "CCP": 12
+    },
+    "sweep": { "vgList": "0:-10:-60", "vpMax": 500, "ipMax": 0.5, "eg2": 250 }
+  },
+  {
+    "id": "6L6GC",
+    "name": "6L6GC",
+    "model": "koren",
+    "type": "pentode",
+    "comment": "Norman Koren Table 1 (6L6CG)",
+    "params": {
+      "MU": 8.7,
+      "EX": 1.35,
+      "KG1": 1460,
+      "KG2": 4500,
+      "KP": 48,
+      "KVB": 12,
+      "VCT": 0,
+      "RGI": 1000,
+      "CCG": 14,
+      "CGP": 0.85,
+      "CCP": 12
+    },
+    "sweep": { "vgList": "0:-5:-40", "vpMax": 500, "ipMax": 0.3, "eg2": 250 }
+  },
+  {
+    "id": "ayumi-12AX7",
+    "name": "12AX7",
+    "model": "ayumi",
+    "type": "triode",
+    "comment": "Ayumi-generic starter (tune to datasheet)",
+    "params": {
+      "G": 0.0012,
+      "MUC": 65,
+      "MUM": 100,
+      "ALPHA": 0.6,
+      "VCT": 0.6,
+      "GLIM": 0.0007,
+      "RAD": 0.4,
+      "RGI": 2000,
+      "CCG": 2.3,
+      "CGP": 2.4,
+      "CCP": 0.9
+    },
+    "sweep": { "vgList": "0:-0.5:-4", "vpMax": 400, "ipMax": 0.006 }
+  },
+  {
+    "id": "immler-12AX7",
+    "name": "12AX7",
+    "model": "immler",
+    "type": "triode",
+    "comment": "Immler-generic starter (tune to datasheet)",
+    "params": {
+      "MU": 100,
+      "XS": 1.4,
+      "KS": 1060,
+      "KP": 600,
+      "KB": 12,
+      "VCT": 0.2,
+      "RGI": 2000,
+      "CCG": 2.3,
+      "CGP": 2.4,
+      "CCP": 0.9
+    },
+    "sweep": { "vgList": "0:-0.5:-4", "vpMax": 400, "ipMax": 0.006 }
+  },
+  {
+    "id": "ridge-12AX7",
+    "name": "12AX7",
+    "model": "ridge",
+    "type": "triode",
+    "comment": "Ridge starter (tune to datasheet)",
+    "params": {
+      "MU": 100,
+      "EX": 1.4,
+      "KG": 620,
+      "KP": 2.2,
+      "KN": 18,
+      "VCT": 0.15,
+      "RGI": 2000,
+      "CCG": 2.3,
+      "CGP": 2.4,
+      "CCP": 0.9
+    },
+    "sweep": { "vgList": "0:-0.5:-4", "vpMax": 400, "ipMax": 0.006 }
+  },
+  {
+    "id": "ridge-6550",
+    "name": "6550",
+    "model": "ridge",
+    "type": "pentode",
+    "comment": "Ridge starter (tune to datasheet)",
+    "params": {
+      "MU": 8.5,
+      "EX": 1.35,
+      "KG": 300,
+      "KP": 1.6,
+      "KN": 28,
+      "RS": 0.14,
+      "MU2": 22,
+      "VCT": 0.1,
+      "RGI": 1000,
+      "CCG": 14,
+      "CGP": 0.85,
+      "CCP": 12
+    },
+    "sweep": { "vgList": "0:-5:-50", "vpMax": 500, "ipMax": 0.4, "eg2": 300 }
+  }
+]

@@ -2,6 +2,13 @@
  * Canvas plot: datasheet image + calibrated axes + curve overlay.
  */
 
+function formatTick(n) {
+  if (!Number.isFinite(n)) return '';
+  const abs = Math.abs(n);
+  const digits = abs >= 100 ? 1 : abs >= 10 ? 2 : 3;
+  return String(Number(n.toFixed(digits)));
+}
+
 export class Plot {
   constructor(canvas) {
     this.canvas = canvas;
@@ -22,7 +29,7 @@ export class Plot {
     this.showScreenCurves = true;
     this.screenCurveColor = '#1d4ed8';
     this.guides = [];
-    this.pad = { left: 56, right: 16, top: 16, bottom: 40 };
+    this.pad = { left: 64, right: 16, top: 16, bottom: 56 };
     /** @type {{ step: number, message: string }|null} */
     this.calibMode = null;
   }
@@ -151,11 +158,12 @@ export class Plot {
   drawGrid() {
     const ctx = this.ctx;
     const box = this.plotBox();
+    const divisions = 10;
     ctx.strokeStyle = '#d0cbc0';
     ctx.lineWidth = 1;
-    for (let i = 0; i <= 10; i++) {
-      const x = box.x + (i / 10) * box.w;
-      const y = box.y + (i / 10) * box.h;
+    for (let i = 0; i <= divisions; i++) {
+      const x = box.x + (i / divisions) * box.w;
+      const y = box.y + (i / divisions) * box.h;
       ctx.beginPath();
       ctx.moveTo(x, box.y);
       ctx.lineTo(x, box.y + box.h);
@@ -164,6 +172,30 @@ export class Plot {
       ctx.moveTo(box.x, y);
       ctx.lineTo(box.x + box.w, y);
       ctx.stroke();
+    }
+    this.drawGridLabels(box, divisions);
+  }
+
+  drawGridLabels(box, divisions) {
+    const c = this.calib;
+    const font = '12px sans-serif';
+    const fill = '#4a453c';
+    for (let i = 0; i <= divisions; i++) {
+      const t = i / divisions;
+      const x = box.x + t * box.w;
+      const y = box.y + t * box.h;
+      this.drawLabel(formatTick(c.vpMax * t), x, box.y + box.h + 3, {
+        fill,
+        font,
+        align: 'center',
+        baseline: 'top',
+      });
+      this.drawLabel(formatTick(c.ipMax * 1000 * (1 - t)), box.x - 6, y, {
+        fill,
+        font,
+        align: 'right',
+        baseline: 'middle',
+      });
     }
   }
 

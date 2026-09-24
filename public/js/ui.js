@@ -1,8 +1,8 @@
 /**
  * Parameter sliders driven by the active model definition.
  *
- * Range: log-mapped for wide-span params.
- * Number: live input/wheel; click-drag scrub — near=fine, away=coarse.
+ * Range: log-mapped across the suggested limits; drag past either end to go further.
+ * Number: live input/wheel and click-drag scrub are unbounded.
  */
 
 const SLIDER_MAX = 1000;
@@ -44,6 +44,11 @@ export function createParamSliders(container, model, params, onChange, type) {
     return Math.min(lim.max, Math.max(lim.min, v));
   }
 
+  function inRange(key, v) {
+    const lim = limits[key];
+    return v >= lim.min && v <= lim.max;
+  }
+
   function snapEnum(key, v) {
     const options = enums[key];
     if (!options?.length) return clamp(key, v);
@@ -61,13 +66,17 @@ export function createParamSliders(container, model, params, onChange, type) {
 
   function valueToSlider(key, value) {
     const lim = limits[key];
-    const v = clamp(key, value);
+    const v = Number(value);
+    if (!Number.isFinite(v)) return 0;
+    let t;
     if (!usesLog(key)) {
-      return ((v - lim.min) / (lim.max - lim.min)) * SLIDER_MAX;
+      t = (v - lim.min) / (lim.max - lim.min);
+    } else {
+      t =
+        (Math.log(Math.max(v, Number.MIN_VALUE)) - Math.log(lim.min)) /
+        (Math.log(lim.max) - Math.log(lim.min));
     }
-    const t =
-      (Math.log(v) - Math.log(lim.min)) / (Math.log(lim.max) - Math.log(lim.min));
-    return t * SLIDER_MAX;
+    return Math.min(SLIDER_MAX, Math.max(0, t * SLIDER_MAX));
   }
 
   function sliderToValue(key, sliderPos) {
@@ -131,14 +140,15 @@ export function createParamSliders(container, model, params, onChange, type) {
 
       let next;
       if (usesLog(key)) {
-        const v = Math.max(Number(num.value) || lim.min, lim.min * 1.0001);
+        const raw = Number(num.value);
+        const v = raw > 0 ? raw : lim.min;
         const logSpan = Math.log(lim.max) - Math.log(lim.min);
         const dLog = (dx / pixelsForSpan) * logSpan * gain * speedBoost;
         next = Math.exp(Math.log(v) + dLog);
       } else {
         next = Number(num.value) + (dx / pixelsForSpan) * span * gain * speedBoost;
       }
-      apply(clamp(key, next));
+      apply(next);
     });
 
     const end = (e) => {
@@ -210,27 +220,67 @@ export function createParamSliders(container, model, params, onChange, type) {
 
     const num = document.createElement('input');
     num.type = 'number';
-    num.min = lim.min;
-    num.max = lim.max;
     num.step = stepHint(key);
     num.value = formatValue(key, params[key] ?? lim.min, lim);
     num.title = 'Drag sideways: near=fine, away=coarse · Shift finer · Alt coarser';
 
     const apply = (v) => {
-      const n = clamp(key, Number(v));
+      const n = Number(v);
       if (!Number.isFinite(n)) return;
       range.value = valueToSlider(key, n);
       num.value = formatValue(key, n, lim);
       onChange(key, n);
     };
 
-    range.addEventListener('input', () => apply(sliderToValue(key, range.value)));
+    // Track position is the suggested range. Pointer past either end keeps going.
+    let rangeDrag = null;
+    const pointerT = (e) => {
+      const rect = range.getBoundingClientRect();
+      return rect.width > 0 ? (e.clientX - rect.left) / rect.width : 0;
+    };
+    const valueFromDrag = (t) => {
+      if (!rangeDrag.relative) return sliderToValue(key, t * SLIDER_MAX);
+      const from = sliderToValue(key, rangeDrag.t0 * SLIDER_MAX);
+      const to = sliderToValue(key, t * SLIDER_MAX);
+      if (usesLog(key) && rangeDrag.v0 > 0 && from > 0) return rangeDrag.v0 * (to / from);
+      return rangeDrag.v0 + (to - from);
+    };
+
+    range.addEventListener('pointerdown', (e) => {
+      if (e.button !== 0) return;
+      const v0 = Number(num.value);
+      rangeDrag = {
+        id: e.pointerId,
+        t0: pointerT(e),
+        v0: Number.isFinite(v0) ? v0 : lim.min,
+        relative: Number.isFinite(v0) && !inRange(key, v0),
+        overflow: false,
+      };
+    });
+    range.addEventListener('pointermove', (e) => {
+      if (!rangeDrag || rangeDrag.id !== e.pointerId) return;
+      const t = pointerT(e);
+      rangeDrag.overflow = t < 0 || t > 1;
+      if (rangeDrag.overflow) apply(valueFromDrag(t));
+    });
+    const endRangeDrag = (e) => {
+      if (!rangeDrag || rangeDrag.id !== e.pointerId) return;
+      rangeDrag = null;
+    };
+    range.addEventListener('pointerup', endRangeDrag);
+    range.addEventListener('pointercancel', endRangeDrag);
+
+    range.addEventListener('input', () => {
+      if (rangeDrag?.overflow) return;
+      const t = Number(range.value) / SLIDER_MAX;
+      apply(rangeDrag ? valueFromDrag(t) : sliderToValue(key, range.value));
+    });
     num.addEventListener('input', () => {
-      if (num.value === '') return;
+      if (num.value === '' || num.value === '-' || num.value === '.' || num.value === '-.') return;
       const n = Number(num.value);
       if (!Number.isFinite(n)) return;
-      range.value = valueToSlider(key, clamp(key, n));
-      onChange(key, clamp(key, n));
+      range.value = valueToSlider(key, n);
+      onChange(key, n);
     });
     num.addEventListener('change', () => apply(num.value));
     num.addEventListener(
@@ -270,7 +320,8 @@ export function createParamSliders(container, model, params, onChange, type) {
           controls[key].select.value = String(snapEnum(key, p[key]));
           continue;
         }
-        const v = clamp(key, p[key]);
+        const v = Number(p[key]);
+        if (!Number.isFinite(v)) continue;
         controls[key].range.value = valueToSlider(key, v);
         controls[key].num.value = formatValue(key, v, limits[key]);
       }

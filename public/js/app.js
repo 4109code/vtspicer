@@ -192,8 +192,9 @@ function updateSpice() {
   $('spiceOut').value = text;
 }
 
-function setParams(p, { syncSliders = true } = {}) {
-  state.params = clampParams(state.modelId, { ...state.params, ...p });
+function setParams(p, { syncSliders = true, clamp = true } = {}) {
+  const merged = { ...state.params, ...p };
+  state.params = clamp ? clampParams(state.modelId, merged) : merged;
   if (syncSliders && sliderApi) sliderApi.setParams(state.params);
   scheduleRedraw();
   persist();
@@ -205,7 +206,7 @@ function rebuildSliders() {
     activeModel(),
     state.params,
     (key, value) => {
-      setParams({ [key]: value }, { syncSliders: false });
+      setParams({ [key]: value }, { syncSliders: false, clamp: false });
     },
     state.type,
   );
@@ -450,10 +451,11 @@ function restore() {
     if (data.type) state.type = normalizeType(data.type);
     syncModelSelect();
     if (data.params) {
-      state.params = clampParams(state.modelId, {
-        ...defaultParams(state.modelId, state.type),
-        ...data.params,
-      });
+      const saved = {};
+      for (const [key, value] of Object.entries(data.params)) {
+        if (Number.isFinite(value)) saved[key] = value;
+      }
+      state.params = { ...defaultParams(state.modelId, state.type), ...saved };
       writeCaps(state.params);
     }
     if (data.vgList) $('vgList').value = data.vgList;

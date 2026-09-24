@@ -9,6 +9,10 @@ function formatTick(n) {
   return String(Number(n.toFixed(digits)));
 }
 
+export function formatMa(amps) {
+  return +(amps * 1000).toFixed(3);
+}
+
 export class Plot {
   constructor(canvas) {
     this.canvas = canvas;
@@ -76,40 +80,13 @@ export class Plot {
   /** Map data (Vp, Ip) → canvas pixels when calibrated, else plot box. */
   dataToPx(vp, ip) {
     const c = this.calib;
-    if (this.isCalibrated()) {
-      const b = this.calibBasis();
-      const u = vp / b.vpMax;
-      const v = ip / b.ipMax;
-      return {
-        x: b.ox + u * b.vx + v * b.ix,
-        y: b.oy + u * b.vy + v * b.iy,
-      };
-    }
-    const box = this.plotBox();
-    const x = box.x + (vp / c.vpMax) * box.w;
-    const y = box.y + box.h - (ip / c.ipMax) * box.h;
-    return { x, y };
+    return this.unitToPx(vp / c.vpMax, ip / c.ipMax);
   }
 
   pxToData(x, y) {
+    const { u, v } = this.pxToUnit(x, y);
     const c = this.calib;
-    if (this.isCalibrated()) {
-      const b = this.calibBasis();
-      const dx = x - b.ox;
-      const dy = y - b.oy;
-      const det = b.vx * b.iy - b.vy * b.ix;
-      if (Math.abs(det) < 1e-9) {
-        return { vp: 0, ip: 0 };
-      }
-      const u = (dx * b.iy - dy * b.ix) / det;
-      const v = (b.vx * dy - b.vy * dx) / det;
-      return { vp: u * b.vpMax, ip: v * b.ipMax };
-    }
-    const box = this.plotBox();
-    return {
-      vp: ((x - box.x) / box.w) * c.vpMax,
-      ip: ((box.y + box.h - y) / box.h) * c.ipMax,
-    };
+    return { vp: u * c.vpMax, ip: v * c.ipMax };
   }
 
   /**
@@ -281,7 +258,7 @@ export class Plot {
   drawAxesLabels() {
     const c = this.calib;
     const font = '16px sans-serif';
-    const ipMa = +(c.ipMax * 1000).toFixed(3);
+    const ipMa = formatMa(c.ipMax);
     this.drawLabel(`Vp → 0…${c.vpMax} V`, this.pad.left, this.canvas.height - 12, {
       fill: '#222',
       font,

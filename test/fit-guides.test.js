@@ -51,6 +51,25 @@ describe('fitToTargets', () => {
     assert.ok(Math.abs(fitted.KG - 700) / 700 < 0.05, `KG=${fitted.KG}`);
   });
 
+  it('does not invent a ridge dip while a depth is still zero', () => {
+    const truth = getModel('ridge').defaults.triode;
+    const start = { ...truth, ND: 2, DD1: 0, VD1: 30, WD1: 20, DD2: 0, VD2: 120, WD2: 25, KN: 30 };
+    const samples = [];
+    for (const eg of [0, -2]) {
+      for (const ep of [25, 60, 120, 250]) {
+        samples.push({
+          Eg: eg,
+          Ep: ep,
+          ip: plateCurrent('ridge', 'triode', eg, ep, 0, { ...truth, KN: 18 }),
+        });
+      }
+    }
+    const fitted = fitToTargets('ridge', 'triode', start, samples, { iterations: 40 });
+    assert.equal(fitted.DD1, 0);
+    assert.equal(fitted.DD2, 0);
+    assert.equal(fitted.VD1, 30);
+  });
+
   it('fits ayumi guides without collapsing the family onto an axis', () => {
     const start = { ...getModel('ayumi').defaults.triode };
     const guides = [

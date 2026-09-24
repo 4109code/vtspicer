@@ -2,6 +2,8 @@
  * Click-to-calibrate datasheet axes: origin → Vp max → Ip max.
  */
 
+import { formatMa } from './plot.js';
+
 const STEP_MSGS = [
   'Click on the graph 0',
   'Click on the Vpmax (end of X axis)',
@@ -52,7 +54,7 @@ export class Calibrator {
       c.ipScale = c.ipMax;
       this.active = false;
       this.step = 0;
-      const ipMa = +(c.ipMax * 1000).toFixed(3);
+      const ipMa = formatMa(c.ipMax);
       this._set(
         `Calibrated: Origin → Vpmax → Ipmax. Vp max=${c.vpMax} V, Ip max=${ipMa} mA.`,
       );

@@ -11,7 +11,7 @@ import {
   normalizeType,
   parseSpiceImport,
 } from '/lib/tube.js';
-import { Plot } from './plot.js';
+import { Plot, formatMa } from './plot.js';
 import { Calibrator } from './calibrate.js';
 import {
   addGuidePoint,
@@ -113,7 +113,16 @@ function migrateGuides(guides, vpMax, ipMax) {
 function setIpMaxMa(ampsOrMa, { fromAmps = false } = {}) {
   const n = Number(ampsOrMa);
   if (!Number.isFinite(n)) return;
-  $('ipMax').value = fromAmps ? +(n * 1000).toFixed(3) : n;
+  $('ipMax').value = fromAmps ? formatMa(n) : n;
+}
+
+function guidesFor(layer) {
+  return layer === 'screen' ? state.screenGuides : state.guides;
+}
+
+function assignGuides(layer, guides) {
+  if (layer === 'screen') state.screenGuides = guides;
+  else state.guides = guides;
 }
 
 function isMultiGrid() {
@@ -261,19 +270,13 @@ function runGuideFit() {
   }
   setParams(params);
   const bits = [`Fitted ${meta.points} points`];
-  if (meta.plateRms != null) bits.push(`plate RMS ${(meta.plateRms * 1000).toFixed(3)} mA`);
-  if (meta.screenRms != null) bits.push(`screen RMS ${(meta.screenRms * 1000).toFixed(3)} mA`);
-  if (meta.plateRms == null && meta.screenRms == null) {
-    bits.push(`RMS ${(meta.rms * 1000).toFixed(3)} mA`);
-  }
+  if (meta.plateRms != null) bits.push(`plate RMS ${formatMa(meta.plateRms)} mA`);
+  if (meta.screenRms != null) bits.push(`screen RMS ${formatMa(meta.screenRms)} mA`);
   updateDrawStatus(`${bits.join(' · ')}.`);
 }
 
 function setGuideLayer(layer, guides, { fit = false } = {}) {
-  if (layer === 'screen') state.screenGuides = guides;
-  else state.guides = guides;
-  plot.guides = state.guides;
-  plot.screenGuides = state.screenGuides;
+  assignGuides(layer, guides);
   scheduleRedraw();
   persist();
   if (fit && guidePointCount() >= 2 && $('drawAutoFit')?.checked) {
@@ -435,75 +438,63 @@ function writePersist() {
   }
 }
 
+/** Legacy sessions stored amperes (< 1); newer ones store milliamps. */
+function storedAmps(raw, fallback) {
+  const n = Number(raw);
+  if (n > 0 && n < 1) return n;
+  return Number.isFinite(n) ? n / 1000 : fallback;
+}
+
 function restore() {
+  let data;
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return;
-    const data = JSON.parse(raw);
-    if (data.modelId) state.modelId = data.modelId;
-    if (!listModels().some((m) => m.id === state.modelId)) {
-      state.modelId = 'koren';
-    }
-    if (data.name) {
-      state.name = data.name;
-      $('tubeName').value = data.name;
-    }
-    if (data.type) state.type = normalizeType(data.type);
-    syncModelSelect();
-    if (data.params) {
-      const saved = {};
-      for (const [key, value] of Object.entries(data.params)) {
-        if (Number.isFinite(value)) saved[key] = value;
-      }
-      state.params = { ...defaultParams(state.modelId, state.type), ...saved };
-      writeCaps(state.params);
-    }
-    if (data.vgList) $('vgList').value = data.vgList;
-    if (data.vpMax) $('vpMax').value = data.vpMax;
-    if (data.ipMax != null) {
-      const n = Number(data.ipMax);
-      // Legacy sessions stored amperes (< 1); new UI stores mA.
-      setIpMaxMa(n, { fromAmps: n > 0 && n < 1 });
-    }
-    if (data.eg2) $('eg2').value = data.eg2;
-    if (typeof data.showScreenCurves === 'boolean') {
-      $('showScreenCurves').checked = data.showScreenCurves;
-    }
-    if (data.calib) {
-      Object.assign(plot.calib, data.calib);
-      if (plot.isCalibrated()) {
-        if (!(plot.calib.vpScale > 0)) plot.calib.vpScale = Number(data.vpMax) || plot.calib.vpMax;
-        if (!(plot.calib.ipScale > 0)) {
-          const n = Number(data.ipMax);
-          plot.calib.ipScale = n > 0 && n < 1 ? n : (Number.isFinite(n) ? n / 1000 : plot.calib.ipMax);
-        }
-        $('calibStatus').textContent = 'Restored previous axis calibration.';
-      }
-    }
-    if (Array.isArray(data.guides)) {
-      const vpMax = plot.calib.vpScale > 0 ? plot.calib.vpScale : Number(data.vpMax) || 400;
-      const ipRaw = Number(data.ipMax);
-      const ipMax = plot.calib.ipScale > 0
-        ? plot.calib.ipScale
-        : ipRaw > 0 && ipRaw < 1
-          ? ipRaw
-          : (Number.isFinite(ipRaw) ? ipRaw / 1000 : 0.01);
-      state.guides = migrateGuides(data.guides, vpMax, ipMax);
-      plot.guides = state.guides;
-    }
-    if (Array.isArray(data.screenGuides)) {
-      const vpMax = plot.calib.vpScale > 0 ? plot.calib.vpScale : Number(data.vpMax) || 400;
-      const ipRaw = Number(data.ipMax);
-      const ipMax = plot.calib.ipScale > 0
-        ? plot.calib.ipScale
-        : ipRaw > 0 && ipRaw < 1
-          ? ipRaw
-          : (Number.isFinite(ipRaw) ? ipRaw / 1000 : 0.01);
-      state.screenGuides = migrateGuides(data.screenGuides, vpMax, ipMax);
-      plot.screenGuides = state.screenGuides;
-    }
+    data = JSON.parse(raw);
   } catch {
-    /* ignore */
+    return;
+  }
+  if (data.modelId) state.modelId = data.modelId;
+  if (!listModels().some((m) => m.id === state.modelId)) {
+    state.modelId = 'koren';
+  }
+  if (data.name) {
+    state.name = data.name;
+    $('tubeName').value = data.name;
+  }
+  if (data.type) state.type = normalizeType(data.type);
+  syncModelSelect();
+  if (data.params) {
+    const saved = {};
+    for (const [key, value] of Object.entries(data.params)) {
+      if (Number.isFinite(value)) saved[key] = value;
+    }
+    state.params = { ...defaultParams(state.modelId, state.type), ...saved };
+    writeCaps(state.params);
+  }
+  if (data.vgList) $('vgList').value = data.vgList;
+  if (data.vpMax) $('vpMax').value = data.vpMax;
+  if (data.ipMax != null) {
+    const n = Number(data.ipMax);
+    setIpMaxMa(n, { fromAmps: n > 0 && n < 1 });
+  }
+  if (data.eg2) $('eg2').value = data.eg2;
+  if (typeof data.showScreenCurves === 'boolean') {
+    $('showScreenCurves').checked = data.showScreenCurves;
+  }
+  if (data.calib) {
+    Object.assign(plot.calib, data.calib);
+    if (plot.isCalibrated()) {
+      if (!(plot.calib.vpScale > 0)) plot.calib.vpScale = Number(data.vpMax) || plot.calib.vpMax;
+      if (!(plot.calib.ipScale > 0)) plot.calib.ipScale = storedAmps(data.ipMax, plot.calib.ipMax);
+      $('calibStatus').textContent = 'Restored previous axis calibration.';
+    }
+  }
+  const vpMax = plot.calib.vpScale > 0 ? plot.calib.vpScale : Number(data.vpMax) || 400;
+  const ipMax = plot.calib.ipScale > 0 ? plot.calib.ipScale : storedAmps(data.ipMax, 0.01);
+  if (Array.isArray(data.guides)) state.guides = migrateGuides(data.guides, vpMax, ipMax);
+  if (Array.isArray(data.screenGuides)) {
+    state.screenGuides = migrateGuides(data.screenGuides, vpMax, ipMax);
   }
 }
 
@@ -562,12 +553,7 @@ function bindUi() {
   $('btnNewTube').addEventListener('click', () => resetToFormulaDefaults());
 
   $('btnFitGuides').addEventListener('click', () => runGuideFit());
-  $('btnUndoGuide').addEventListener('click', () => {
-    const vg = Number($('drawVg').value);
-    const layer = guideLayer();
-    const list = layer === 'screen' ? state.screenGuides : state.guides;
-    setGuideLayer(layer, undoGuidePoint(list, Number.isFinite(vg) ? vg : null));
-  });
+  $('btnUndoGuide').addEventListener('click', () => undoActiveGuide());
   $('btnClearGuides').addEventListener('click', () => {
     setGuideLayer(guideLayer(), []);
   });
@@ -582,10 +568,7 @@ function bindUi() {
       const t = e.target;
       if (t instanceof HTMLInputElement || t instanceof HTMLTextAreaElement) return;
       e.preventDefault();
-      const vg = Number($('drawVg').value);
-      const layer = guideLayer();
-      const list = layer === 'screen' ? state.screenGuides : state.guides;
-      setGuideLayer(layer, undoGuidePoint(list, Number.isFinite(vg) ? vg : null));
+      undoActiveGuide();
     }
   });
   $('btnClearImage').addEventListener('click', () => {
@@ -720,6 +703,12 @@ function bindUi() {
   canvas.addEventListener('click', onClick);
 }
 
+function undoActiveGuide() {
+  const vg = Number($('drawVg').value);
+  const layer = guideLayer();
+  setGuideLayer(layer, undoGuidePoint(guidesFor(layer), Number.isFinite(vg) ? vg : null));
+}
+
 function onClick(evt) {
   const local = plot.eventToLocal(evt);
   if (calibrator.onClick(local)) {
@@ -735,8 +724,7 @@ function onClick(evt) {
   const vg = Number($('drawVg').value);
   if (!Number.isFinite(vg)) return;
   const layer = guideLayer();
-  const list = layer === 'screen' ? state.screenGuides : state.guides;
-  setGuideLayer(layer, addGuidePoint(list, vg, unit.u, Math.max(0, unit.v)), { fit: true });
+  setGuideLayer(layer, addGuidePoint(guidesFor(layer), vg, unit.u, Math.max(0, unit.v)), { fit: true });
 }
 
 function onPointerDown(evt) {
@@ -776,7 +764,7 @@ function onPointerMove(evt) {
 
   drag.moved = true;
   const unit = plot.pxToUnit(local.x, local.y);
-  const source = drag.layer === 'screen' ? state.screenGuides : state.guides;
+  const source = guidesFor(drag.layer);
   const guides = cloneGuides(source);
   const curve = guides[drag.gi];
   if (!curve) return;
@@ -792,10 +780,7 @@ function onPointerMove(evt) {
     }
   });
   drag.pi = bestPi;
-  if (drag.layer === 'screen') state.screenGuides = guides;
-  else state.guides = guides;
-  plot.guides = state.guides;
-  plot.screenGuides = state.screenGuides;
+  assignGuides(drag.layer, guides);
   schedulePaint();
 }
 
@@ -805,8 +790,7 @@ function onPointerUp() {
   const layer = drag.layer;
   drag = null;
   if (moved) {
-    const guides = layer === 'screen' ? state.screenGuides : state.guides;
-    setGuideLayer(layer, guides, { fit: true });
+    setGuideLayer(layer, guidesFor(layer), { fit: true });
   }
   flushPersist();
 }

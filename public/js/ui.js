@@ -5,6 +5,8 @@
  * Number: live input/wheel and click-drag scrub are unbounded.
  */
 
+import { PASSIVE_KEYS } from '/lib/models/math.js';
+
 const SLIDER_MAX = 1000;
 
 function decimalsFor(key, lim) {
@@ -34,6 +36,32 @@ export function createParamSliders(container, model, params, onChange, type) {
   const logSet = new Set(model.logParams || []);
   const multiSet = new Set(model.multiGridParams || []);
   const enums = model.enumParams || {};
+  const live = { ...params };
+  const dipOf = typeof model.dipSlot === 'function' ? model.dipSlot : null;
+
+  function shown(key, source) {
+    const v = source[key];
+    if (v != null && Number.isFinite(Number(v))) return Number(v);
+    const fb = model.paramFallback?.[key];
+    if (fb != null && Number.isFinite(fb)) return fb;
+    return limits[key].min;
+  }
+
+  function syncDips(source) {
+    if (!dipOf) return;
+    const n = Math.round(Number(source.ND ?? 0));
+    for (const key of model.paramKeys) {
+      const slot = dipOf(key);
+      if (!slot || !controls[key]) continue;
+      controls[key].row.hidden = slot > n;
+    }
+  }
+
+  function emit(key, value) {
+    live[key] = value;
+    onChange(key, value);
+    syncDips(live);
+  }
 
   function usesLog(key) {
     return logSet.has(key) && limits[key].min > 0;
@@ -202,7 +230,7 @@ export function createParamSliders(container, model, params, onChange, type) {
       }
       sel.value = String(snapEnum(key, params[key] ?? enums[key][0].value));
       sel.addEventListener('change', () => {
-        onChange(key, snapEnum(key, Number(sel.value)));
+        emit(key, snapEnum(key, Number(sel.value)));
       });
       row.append(lab, sel);
       container.appendChild(row);
@@ -215,13 +243,13 @@ export function createParamSliders(container, model, params, onChange, type) {
     range.min = 0;
     range.max = SLIDER_MAX;
     range.step = 1;
-    range.value = valueToSlider(key, params[key] ?? lim.min);
+    range.value = valueToSlider(key, shown(key, live));
     range.title = usesLog(key) ? 'Log scale' : 'Linear';
 
     const num = document.createElement('input');
     num.type = 'number';
     num.step = stepHint(key);
-    num.value = formatValue(key, params[key] ?? lim.min, lim);
+    num.value = formatValue(key, shown(key, live), lim);
     num.title = 'Drag sideways: near=fine, away=coarse · Shift finer · Alt coarser';
 
     const apply = (v) => {
@@ -229,7 +257,7 @@ export function createParamSliders(container, model, params, onChange, type) {
       if (!Number.isFinite(n)) return;
       range.value = valueToSlider(key, n);
       num.value = formatValue(key, n, lim);
-      onChange(key, n);
+      emit(key, n);
     };
 
     // Track position is the suggested range. Pointer past either end keeps going.
@@ -280,7 +308,7 @@ export function createParamSliders(container, model, params, onChange, type) {
       const n = Number(num.value);
       if (!Number.isFinite(n)) return;
       range.value = valueToSlider(key, n);
-      onChange(key, n);
+      emit(key, n);
     });
     num.addEventListener('change', () => apply(num.value));
     num.addEventListener(
@@ -310,10 +338,14 @@ export function createParamSliders(container, model, params, onChange, type) {
     controls[key] = { row, range, num };
   }
 
+  syncDips(live);
+
   return {
     controls,
     model,
     setParams(p) {
+      Object.assign(live, p);
+      syncDips(live);
       for (const key of model.paramKeys) {
         if (p[key] == null || !controls[key]) continue;
         if (controls[key].select) {
@@ -336,7 +368,7 @@ export function createParamSliders(container, model, params, onChange, type) {
   };
 }
 
-export const CAP_IDS = ['CCG', 'CGP', 'CCP', 'RGI'];
+export const CAP_IDS = PASSIVE_KEYS;
 
 export function readCaps() {
   return Object.fromEntries(CAP_IDS.map((id) => [id, Number(document.getElementById(id).value)]));

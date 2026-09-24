@@ -146,6 +146,85 @@ describe('ridge plate/screen split', () => {
   });
 });
 
+describe('ridge voltage dips', () => {
+  const base = getModel('ridge').defaults.pentode;
+
+  it('leaves the curve unchanged when the dip count is off', () => {
+    const off = { ...base, ND: 0, DD1: 0.4, VD1: 40, WD1: 20 };
+    const bare = { ...base };
+    delete bare.ND;
+    for (const ep of [20, 80, 250]) {
+      const a = plateCurrent('ridge', 'pentode', -2, ep, 250, off);
+      const b = plateCurrent('ridge', 'pentode', -2, ep, 250, bare);
+      assert.ok(Math.abs(a - b) < 1e-12);
+    }
+  });
+
+  it('pulls low-voltage plate current down without moving the far plateau', () => {
+    const dipped = { ...base, ND: 1, DD1: 0.45, VD1: 0, WD1: 40 };
+    const near = plateCurrent('ridge', 'pentode', 0, 15, 250, dipped);
+    const near0 = plateCurrent('ridge', 'pentode', 0, 15, 250, base);
+    const far = plateCurrent('ridge', 'pentode', 0, 300, 250, dipped);
+    const far0 = plateCurrent('ridge', 'pentode', 0, 300, 250, base);
+    assert.ok(near < near0 * 0.75);
+    assert.ok(Math.abs(far - far0) / far0 < 0.01);
+  });
+
+  it('places a second dip in the middle while the first stays at the start', () => {
+    const dipped = {
+      ...base,
+      ND: 2,
+      DD1: 0.5,
+      VD1: 0,
+      WD1: 18,
+      DD2: 0.25,
+      VD2: 90,
+      WD2: 16,
+    };
+    const at = (ep) => plateCurrent('ridge', 'pentode', -4, ep, 250, dipped);
+    const plain = (ep) => plateCurrent('ridge', 'pentode', -4, ep, 250, base);
+    const startCut = plain(8) - at(8);
+    const midCut = plain(90) - at(90);
+    const tailCut = plain(280) - at(280);
+    assert.ok(startCut > 0);
+    assert.ok(midCut > tailCut * 5);
+    assert.ok(midCut > plain(90) * 0.1);
+  });
+
+  it('returns dipped plate current to the screen', () => {
+    const dipped = { ...base, ND: 1, DD1: 0.3, VD1: 60, WD1: 25 };
+    const eg = -3;
+    const ep = 60;
+    const eg2 = 200;
+    const sum = (p) =>
+      plateCurrent('ridge', 'pentode', eg, ep, eg2, p) +
+      screenCurrent('ridge', 'pentode', eg, ep, eg2, p);
+    assert.ok(Math.abs(sum(base) - sum(dipped)) < 1e-9);
+    assert.ok(plateCurrent('ridge', 'pentode', eg, ep, eg2, dipped) < plateCurrent('ridge', 'pentode', eg, ep, eg2, base));
+    assert.ok(screenCurrent('ridge', 'pentode', eg, ep, eg2, dipped) > screenCurrent('ridge', 'pentode', eg, ep, eg2, base));
+  });
+
+  it('omits the notch from spice until a depth is set', () => {
+    const plain = generateSubckt({
+      modelId: 'ridge',
+      name: 'T',
+      type: 'pentode',
+      params: base,
+    });
+    assert.doesNotMatch(plain, /DD1/);
+    const dipped = generateSubckt({
+      modelId: 'ridge',
+      name: 'T',
+      type: 'pentode',
+      params: { ...base, ND: 2, DD1: 0.2, VD1: 0, WD1: 40, DD2: 0.15, VD2: 80, WD2: 25 },
+    });
+    assert.match(dipped, /DD1=0\.2/);
+    assert.match(dipped, /DD2=0\.15/);
+    assert.match(dipped, /1-DD1\*EXP\(-PWR\(\(URAMP\(V\(1,3\)\)-VD1\)\/WD1,2\)\)/);
+    assert.match(dipped, /1-DD2\*EXP/);
+  });
+});
+
 describe('karpov residual screen', () => {
   const p = {
     MU: 21,

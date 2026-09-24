@@ -3,7 +3,7 @@
  * Plate guides match Ip. Screen guides match Ig2.
  */
 
-import { fitToTargets, getModel, plateCurrent, screenCurrent } from '/lib/tube.js';
+import { fitToTargets, getModel, plateCurrent, plateFitKeys, screenCurrent } from '/lib/tube.js';
 
 /**
  * @typedef {{ vg: number, points: { u: number, v: number }[] }} GuideCurve
@@ -59,12 +59,13 @@ function plateHoldTargets(modelId, type, params, screenTargets) {
   return rows;
 }
 
-function fitKeys(modelId, type, hasPlate, hasScreen) {
+function fitKeys(modelId, type, params, hasPlate, hasScreen) {
   const model = getModel(modelId);
-  const plateKeys = model.inverseKeys?.[type] || model.inverseKeys?.triode || model.paramKeys || [];
   const screenKeys = model.screenKeys?.[type] || [];
-  if (hasPlate && hasScreen) return [...new Set([...plateKeys, ...screenKeys])];
-  if (hasScreen) return screenKeys;
+  if (hasScreen && !hasPlate) return screenKeys;
+  if (hasPlate && hasScreen) {
+    return [...new Set([...plateFitKeys(model, type, params), ...screenKeys])];
+  }
   return null;
 }
 
@@ -110,7 +111,7 @@ export function fitParamsToGuides(
     for (const t of holds) t.w = holdW;
   }
 
-  const keys = fitKeys(modelId, type, plate.length > 0, screen.length > 0);
+  const keys = fitKeys(modelId, type, params, plate.length > 0, screen.length > 0);
   if (screen.length && !plate.length && !keys?.length) {
     return { params, meta: { ok: false, reason: 'this formula has no screen parameters' } };
   }
@@ -125,7 +126,6 @@ export function fitParamsToGuides(
     meta: {
       ok: true,
       points: plate.length + screen.length,
-      rms: rms(modelId, type, next, plate.length ? plate : screen),
       plateRms: rms(modelId, type, next, plate),
       screenRms: rms(modelId, type, next, screen),
     },

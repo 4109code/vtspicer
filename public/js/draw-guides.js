@@ -61,7 +61,10 @@ function plateHoldTargets(modelId, type, params, screenTargets) {
 
 function fitKeys(modelId, type, params, hasPlate, hasScreen) {
   const model = getModel(modelId);
-  const screenKeys = model.screenKeys?.[type] || [];
+  const screenKeys =
+    typeof model.screenKeyList === 'function'
+      ? model.screenKeyList(type, params)
+      : model.screenKeys?.[type] || [];
   if (hasScreen && !hasPlate) return screenKeys;
   if (hasPlate && hasScreen) {
     return [...new Set([...plateFitKeys(model, type, params), ...screenKeys])];

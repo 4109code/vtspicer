@@ -7,7 +7,13 @@ import {
   screenVoltage,
   analyzeLoadLine,
 } from '../lib/loadline.js';
-import { plateCurrent, defaultParams, generateSubckt, parseSpiceImport } from '../lib/tube.js';
+import {
+  plateCurrent,
+  screenCurrent,
+  defaultParams,
+  generateSubckt,
+  parseSpiceImport,
+} from '../lib/tube.js';
 import { gridCurrent, childLawIg } from '../lib/models/math.js';
 
 function close(actual, expected, tol = 1e-6) {
@@ -78,6 +84,24 @@ describe('grid current', () => {
     const parsed = parseSpiceImport(text);
     assert.equal(parsed.params.gridLaw, 'child');
     assert.equal(parsed.params.VGOFF, -0.6);
+  });
+});
+
+describe('Koren screen knee', () => {
+  it('stays flat in Ep until KVC is set, then falls', () => {
+    const p = defaultParams('koren', 'pentode');
+    const a = screenCurrent('koren', 'pentode', -1, 40, 250, p);
+    const b = screenCurrent('koren', 'pentode', -1, 400, 250, p);
+    close(a, b, 1e-12);
+    const g = { ...p, KVC: Math.atan(80 / p.KVB) };
+    const atKnee = screenCurrent('koren', 'pentode', 0, 80, 250, g);
+    const low = screenCurrent('koren', 'pentode', 0, 20, 250, g);
+    const high = screenCurrent('koren', 'pentode', 0, 400, 250, g);
+    assert.ok(Math.abs(atKnee) < 1e-9, `atKnee=${atKnee}`);
+    assert.ok(low > high, `low=${low} high=${high}`);
+    const text = generateSubckt({ modelId: 'koren', name: 'T', type: 'pentode', params: g });
+    assert.match(text, /KVC-ATAN/);
+    assert.match(text, /Triode-strapped KG1=/);
   });
 });
 

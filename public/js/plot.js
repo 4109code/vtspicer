@@ -163,24 +163,40 @@ export class Plot {
     };
   }
 
+  paintBackdrop(ctx) {
+    const w = this.canvas.width;
+    const h = this.canvas.height;
+    const key = `${w}x${h}|${this.imageOpacity}|${this.image ? 1 : 0}`;
+    if (!this._backdrop || this._backdropKey !== key || this._backdropImage !== this.image) {
+      const off = document.createElement('canvas');
+      off.width = w;
+      off.height = h;
+      const saved = this.ctx;
+      this.ctx = off.getContext('2d');
+      this.ctx.fillStyle = '#f4f1ea';
+      this.ctx.fillRect(0, 0, w, h);
+      if (this.image) {
+        this.ctx.save();
+        this.ctx.globalAlpha = this.imageOpacity;
+        this.ctx.drawImage(this.image, 0, 0, w, h);
+        this.ctx.restore();
+      } else {
+        this.drawGrid();
+      }
+      this.ctx = saved;
+      this._backdrop = off;
+      this._backdropKey = key;
+      this._backdropImage = this.image;
+    }
+    ctx.drawImage(this._backdrop, 0, 0);
+  }
+
   draw() {
     const ctx = this.ctx;
     const w = this.canvas.width;
     const h = this.canvas.height;
     ctx.clearRect(0, 0, w, h);
-
-    // Background
-    ctx.fillStyle = '#f4f1ea';
-    ctx.fillRect(0, 0, w, h);
-
-    if (this.image) {
-      ctx.save();
-      ctx.globalAlpha = this.imageOpacity;
-      ctx.drawImage(this.image, 0, 0, w, h);
-      ctx.restore();
-    } else {
-      this.drawGrid();
-    }
+    this.paintBackdrop(ctx);
 
     this.drawAxesLabels();
     this.drawCurves();

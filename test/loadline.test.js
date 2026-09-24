@@ -4,8 +4,12 @@ import {
   harmonics,
   intersectLoadLine,
   outputPower,
+  swingLevels,
   screenVoltage,
   analyzeLoadLine,
+  loadLineScore,
+  optimizeLoadLine,
+  swingSamples,
 } from '../lib/loadline.js';
 import {
   plateCurrent,
@@ -50,6 +54,13 @@ describe('load line intersection', () => {
 describe('output power', () => {
   it('is Vpp times Ipp over 8', () => {
     close(outputPower(40, 0.02), 0.1);
+  });
+
+  it('matches Vout rms times Iout rms, with Vin rms as peak over √2', () => {
+    const levels = swingLevels(2, 40, 0.02);
+    close(levels.vinRms, 2 / Math.SQRT2);
+    close(levels.voutPp, 40);
+    close(levels.voutRms * levels.ioutRms, outputPower(40, 0.02));
   });
 });
 
@@ -133,5 +144,86 @@ describe('analyzeLoadLine', () => {
     assert.ok(op.mu > 1, `mu=${op.mu}`);
     assert.ok(op.pout >= 0);
     assert.equal(op.sweep.length, 10);
+    assert.ok(op.eta >= 0);
+  });
+});
+
+describe('load line score', () => {
+  it('prefers lower THD even against more power, and more power at the same THD', () => {
+    const cleanSmall = loadLineScore({ pout: 0.05, thd: 1 });
+    const dirtyBig = loadLineScore({ pout: 0.4, thd: 8 });
+    const cleanBig = loadLineScore({ pout: 0.2, thd: 1 });
+    assert.ok(cleanSmall > dirtyBig);
+    assert.ok(cleanBig > cleanSmall);
+    assert.equal(loadLineScore({ pout: 0, thd: 0.1 }), 0);
+  });
+});
+
+describe('optimizeLoadLine', () => {
+  it('stays inside Pmax and beats a starved bias on THD-first score', () => {
+    const params = defaultParams('koren', 'triode');
+    const ipAt = (vg, vp, eg2) => plateCurrent('koren', 'triode', vg, vp, eg2, params);
+    const pmax = 0.8;
+    const best = optimizeLoadLine({ ipAt, pmax, vpHi: 400 });
+    assert.ok(best, 'expected a point');
+    assert.ok(best.plateDissipation <= pmax * 1.002, `pdiss=${best.plateDissipation}`);
+    assert.ok(best.pout > 0);
+    assert.ok(best.thd < 15, `thd=${best.thd}`);
+
+    const starved = analyzeLoadLine({
+      ipAt,
+      vg: -3.5,
+      vp: 180,
+      rp: 470000,
+      vin: 0.4,
+      vpHi: 1600,
+    });
+    assert.ok(starved.plateDissipation <= pmax);
+    assert.ok(best.score >= loadLineScore(starved) * 0.98, `best=${best.score} starved=${loadLineScore(starved)}`);
+
+    const tight = optimizeLoadLine({ ipAt, pmax: 0.25, vpHi: 400 });
+    assert.ok(tight.plateDissipation <= 0.25 * 1.002);
+    assert.ok(tight.plateDissipation <= best.plateDissipation + 1e-9);
+  });
+
+  it('keeps both swing peaks inside Vp > 0 and Ip > 0', () => {
+    const ipAt = (_vg, vp) => Math.max(0, 0.0004 * (vp - 30) + 0.003 * (_vg + 4));
+    const best = optimizeLoadLine({ ipAt, pmax: 2, vpHi: 400 });
+    assert.ok(best, 'expected a point');
+    const samples = swingSamples(ipAt, {
+      vg: best.vg,
+      vin: best.vin,
+      vq: best.vp,
+      iq: best.iq,
+      rp: best.rp,
+      eg2: 0,
+      ul: 0,
+      vpLo: -200,
+      vpHi: 2000,
+    });
+    assert.ok(samples.every((s) => s.vp > 0 && s.ip > 0));
+    const clipped = swingSamples(ipAt, {
+      vg: best.vg,
+      vin: Math.max(best.vin * 4, -best.vg),
+      vq: best.vp,
+      iq: best.iq,
+      rp: best.rp,
+      eg2: 0,
+      ul: 0,
+      vpLo: -200,
+      vpHi: 2000,
+    });
+    assert.ok(clipped.some((s) => !(s.vp > 0) || !(s.ip > 0) || s.vp == null));
+  });
+
+  it('stays at or below Acceptable THD and uses a looser limit for more power', () => {
+    const params = defaultParams('koren', 'triode');
+    const ipAt = (vg, vp, eg2) => plateCurrent('koren', 'triode', vg, vp, eg2, params);
+    const tight = optimizeLoadLine({ ipAt, pmax: 1, thdMax: 1, vpHi: 400 });
+    const loose = optimizeLoadLine({ ipAt, pmax: 1, thdMax: 5, vpHi: 400 });
+    assert.ok(tight && loose);
+    assert.ok(tight.thd <= 1.001, `thd=${tight.thd}`);
+    assert.ok(loose.thd <= 5.001, `thd=${loose.thd}`);
+    assert.ok(loose.pout + 1e-9 >= tight.pout);
   });
 });

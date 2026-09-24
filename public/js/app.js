@@ -26,11 +26,16 @@ import {
   analyzeLoadLine,
   dissipationCurrent,
   screenVoltage,
+  swingLevels,
+  loadLineCurrent,
   swingSamples,
+  VG_SEARCH_HI,
+  VG_SEARCH_LO,
   vgAtCurrent,
   smallSignal,
+  optimizeLoadLine,
 } from '/lib/loadline.js';
-import { CHILD_DEFAULTS, childLawIg, gridCurrent } from '/lib/models/math.js';
+import { CHILD_DEFAULTS, CHILD_KEYS, childLawIg, gridCurrent } from '/lib/models/math.js';
 
 const STORAGE_KEY = 'koren-tube-modeler-v2';
 
@@ -180,6 +185,7 @@ function readLoadUi() {
     vg: num('loadVg', -2),
     vin: Math.max(0, num('loadVin', 1)),
     pmax: Math.max(0, num('loadPmax', 1)),
+    thdMax: Math.max(0, num('loadThd', 1)),
     showPmax: $('showPmax').checked,
     showIg: $('showIg').checked,
     gridLaw: $('igMode').value === 'child' ? 'child' : 'diode',
@@ -191,6 +197,20 @@ function readLoadUi() {
 
 function plateAt(vg, vp, screen) {
   return plateCurrent(state.modelId, state.type, vg, vp, screen, state.params);
+}
+
+function screenAt(vg, vp, screen) {
+  return screenCurrent(state.modelId, state.type, vg, vp, screen, state.params);
+}
+
+function addFamilies(plate, screen) {
+  return plate.map((curve, i) => ({
+    vg: curve.vg,
+    points: curve.points.map((p, j) => ({
+      vp: p.vp,
+      ip: p.ip + screen[i].points[j].ip,
+    })),
+  }));
 }
 
 /** Line through the middle of the plot, with the quiescent point on a curve that conducts. */
@@ -211,24 +231,55 @@ function centerLoadLine() {
   const listed = parseVgList($('vgList').value);
   const vg = listed.length ? Math.max(...listed) : 0;
   $('loadVg').value = String(vg);
-  const screenAt = (vp) => eg2For(vp, eg2, readLoadUi());
-  const atMid = plateAt(vg, midVp, screenAt(midVp));
+  const screenOf = (vp) => eg2For(vp, eg2, readLoadUi());
+  const atMid = plateAt(vg, midVp, screenOf(midVp));
   let vp = midVp;
   let ip = atMid;
   let rp = vpMax / ipMax;
   if (atMid < midIp * 0.8) {
     vp = vpMax * 0.72;
-    ip = plateAt(vg, vp, screenAt(vp));
+    ip = plateAt(vg, vp, screenOf(vp));
     const den = midIp - ip;
     rp = Math.abs(den) > midIp * 0.05 ? (vp - midVp) / den : rp;
   } else if (atMid > midIp * 1.2) {
-    const solved = vgAtCurrent(plateAt, midVp, midIp, screenAt(midVp));
+    const solved = vgAtCurrent(plateAt, midVp, midIp, screenOf(midVp));
     if (solved != null) $('loadVg').value = solved.toFixed(2);
     ip = midIp;
   }
   $('loadVp').value = String(Math.round(vp));
   $('loadRp').value = String(Math.max(1, Math.round(Math.abs(rp))));
   $('loadVin').value = visibleVin(vp, ip, eg2).toFixed(2);
+}
+
+function applyBestLoadLine() {
+  if (state.type === 'diode') return;
+  const load = readLoadUi();
+  const eg2 = Number($('eg2').value) || 300;
+  const vpMax = Number($('vpMax').value) || 400;
+  const hint = $('loadOptHint');
+  hint.textContent = 'Searching…';
+  const best = optimizeLoadLine({
+    ipAt: plateAt,
+    ig2At: isMultiGrid() ? screenAt : null,
+    eg2,
+    ul: isMultiGrid() && load.ulOn ? load.ul : 0,
+    pmax: load.pmax,
+    thdMax: load.thdMax,
+    vpHi: vpMax,
+  });
+  if (!best) {
+    hint.textContent = 'No point under Pmax and Acceptable THD. Raise one of those limits';
+    return;
+  }
+  $('showLoadLine').checked = true;
+  $('loadRp').value = String(Math.max(1, Math.round(best.rp)));
+  $('loadVp').value = best.vp.toFixed(1);
+  $('loadVg').value = best.vg.toFixed(2);
+  $('loadVin').value = best.vin.toFixed(2);
+  loadPlaced = true;
+  hint.textContent = 'Most output power at or below Acceptable THD. Plate heat stays within Pmax';
+  scheduleRedraw();
+  persist();
 }
 
 function visibleVin(vp, ip, eg2) {
@@ -274,8 +325,8 @@ function placeLoadCenter(vp, ip) {
   let target = Math.max(0, ip);
   let vg = vgAtCurrent(plateAt, vp, target, screen);
   if (vg == null) {
-    const lo = plateAt(-200, vp, screen);
-    const hi = plateAt(40, vp, screen);
+    const lo = plateAt(VG_SEARCH_LO, vp, screen);
+    const hi = plateAt(VG_SEARCH_HI, vp, screen);
     target = Math.min(Math.max(target, Math.min(lo, hi)), Math.max(lo, hi));
     vg = vgAtCurrent(plateAt, vp, target, screen);
   }
@@ -321,9 +372,9 @@ function swingMarker(sample, side, load, iq, vpMax, ipMax) {
   if (side === 'high') {
     const vpTop = vq - rp * (ipMax - iq);
     if (vpTop >= 0 && vpTop <= vpMax) return { vp: vpTop, ip: ipMax };
-    return { vp: 0, ip: Math.min(ipMax, Math.max(0, iq + vq / rp)) };
+    return { vp: 0, ip: Math.min(ipMax, Math.max(0, loadLineCurrent(0, vq, iq, rp))) };
   }
-  const ipRight = iq + (vq - vpMax) / rp;
+  const ipRight = loadLineCurrent(vpMax, vq, iq, rp);
   if (ipRight >= 0 && ipRight <= ipMax) return { vp: vpMax, ip: ipRight };
   const vc = vq + rp * iq;
   return { vp: Math.min(vpMax, Math.max(0, vc)), ip: 0 };
@@ -369,6 +420,11 @@ function sweepCurves(vgList, vpMax, vpSteps, eg2, load, currentFn) {
   return curves;
 }
 
+let curveKey = '';
+let loadKey = '';
+let spiceKey = '';
+let lastOp = null;
+
 function redraw() {
   const diode = state.type === 'diode';
   const vgList = diode ? [0] : parseVgList($('vgList').value);
@@ -384,62 +440,69 @@ function redraw() {
   const eg2 = Number($('eg2').value) || 300;
   const vpSteps = Number($('vpSteps').value) || 120;
   const vpMax = plot.calib.vpMax;
-  const plateAt = (vg, vp, screen) =>
-    plateCurrent(state.modelId, state.type, vg, vp, screen, state.params);
-
-  plot.curves = sweepCurves(vgList, vpMax, vpSteps, eg2, load, plateAt);
-  plot.showScreenCurves = isMultiGrid() && $('showScreenCurves').checked;
-  plot.screenCurves = plot.showScreenCurves
-    ? sweepCurves(vgList, vpMax, vpSteps, eg2, load, (vg, vp, screen) =>
-        screenCurrent(state.modelId, state.type, vg, vp, screen, state.params),
-      )
-    : [];
-  plot.sumCurves =
-    isMultiGrid() && load.showSum
-      ? sweepCurves(vgList, vpMax, vpSteps, eg2, load, (vg, vp, screen) => {
-          return (
-            plateAt(vg, vp, screen) +
-            screenCurrent(state.modelId, state.type, vg, vp, screen, state.params)
-          );
-        })
+  const ulTap = isMultiGrid() && load.ulOn ? [load.ul, load.vp] : null;
+  const nextCurveKey = JSON.stringify([
+    state.modelId, state.type, state.params, vgList, vpMax, vpSteps, eg2, ulTap,
+    isMultiGrid() && $('showScreenCurves').checked, isMultiGrid() && load.showSum,
+    !diode && load.showIg, load.gridLaw, load.showPmax, load.pmax,
+  ]);
+  if (nextCurveKey !== curveKey) {
+    const showScreen = isMultiGrid() && $('showScreenCurves').checked;
+    const showSum = isMultiGrid() && load.showSum;
+    const plate = sweepCurves(vgList, vpMax, vpSteps, eg2, load, plateAt);
+    const screen = showScreen || showSum
+      ? sweepCurves(vgList, vpMax, vpSteps, eg2, load, screenAt)
       : [];
-  plot.igCurves =
-    !diode && load.showIg
+    plot.curves = plate;
+    plot.showScreenCurves = showScreen;
+    plot.screenCurves = showScreen ? screen : [];
+    plot.sumCurves = showSum ? addFamilies(plate, screen) : [];
+    plot.igCurves = !diode && load.showIg
       ? sweepCurves(vgList, vpMax, vpSteps, eg2, load, (vg, vp) => {
-          if (state.modelId === 'koren' && load.gridLaw === 'child') {
-            return childLawIg(vg, vp, state.params);
-          }
-          return gridCurrent(vg, state.params.RGI ?? 2000);
-        })
+        if (state.modelId === 'koren' && load.gridLaw === 'child') {
+          return childLawIg(vg, vp, state.params);
+        }
+        return gridCurrent(vg, state.params.RGI ?? 2000);
+      })
       : [];
-  plot.dissip = load.showPmax
-    ? Array.from({ length: 80 }, (_, i) => {
+    plot.dissip = load.showPmax
+      ? Array.from({ length: 80 }, (_, i) => {
         const vp = (vpMax * (i + 1)) / 80;
         return { vp, ip: dissipationCurrent(vp, load.pmax) };
       })
-    : null;
+      : null;
+    curveKey = nextCurveKey;
+  }
 
-  const op = analyzeLoadLine({
-    ipAt: plateAt,
-    ig2At: isMultiGrid()
-      ? (vg, vp, screen) => screenCurrent(state.modelId, state.type, vg, vp, screen, state.params)
-      : null,
-    vg: diode ? 0 : load.vg,
-    vp: load.vp,
-    rp: load.rp,
-    vin: diode ? 0 : load.vin,
-    eg2,
-    ul: isMultiGrid() && load.ulOn ? load.ul : 0,
-    hasGrid: !diode,
-    ccgPf: state.params.CCG,
-    cgpPf: state.params.CGP,
-    vpHi: Math.max(vpMax * 5, load.vp * 4, 2000),
-  });
+  const nextLoadKey = JSON.stringify([
+    state.modelId, state.type, state.params, diode, load, eg2, vpMax,
+  ]);
+  let op = lastOp;
+  if (nextLoadKey !== loadKey || !op) {
+    op = analyzeLoadLine({
+      ipAt: plateAt,
+      ig2At: isMultiGrid() ? screenAt : null,
+      vg: diode ? 0 : load.vg,
+      vp: load.vp,
+      rp: load.rp,
+      vin: diode ? 0 : load.vin,
+      eg2,
+      ul: isMultiGrid() && load.ulOn ? load.ul : 0,
+      hasGrid: !diode,
+      ccgPf: state.params.CCG,
+      cgpPf: state.params.CGP,
+      vpHi: Math.max(vpMax * 5, load.vp * 4, 2000),
+    });
+    lastOp = op;
+    loadKey = nextLoadKey;
+    updateLoadResults(op, load, diode);
+    drawHarmonics(op.sweep);
+  }
   plot.loadLine = load.show && op.vc > 0
     ? [
-        { vp: 0, ip: op.vc / load.rp },
-        { vp: op.vc, ip: 0 },
-      ]
+      { vp: 0, ip: op.vc / load.rp },
+      { vp: op.vc, ip: 0 },
+    ]
     : null;
   plot.qPoint = load.show ? { vp: load.vp, ip: op.ip } : null;
   const ipMax = plot.calib.ipMax;
@@ -450,9 +513,11 @@ function redraw() {
   plot.guides = state.guides;
   plot.screenGuides = state.screenGuides;
   plot.draw();
-  updateSpice();
-  updateLoadResults(op, load, diode);
-  drawHarmonics(op.sweep);
+  const nextSpiceKey = JSON.stringify([state.modelId, state.name, state.type, state.params, readCaps()]);
+  if (nextSpiceKey !== spiceKey) {
+    updateSpice();
+    spiceKey = nextSpiceKey;
+  }
   updateDrawStatus();
 }
 
@@ -487,6 +552,7 @@ function loadMetric(key, value, hint) {
 
 function updateLoadResults(op, load, diode) {
   const box = $('loadResults');
+  const levels = swingLevels(diode ? 0 : load.vin, op.vpp, op.ipp);
   const rows = [
     loadMetric(
       'Point',
@@ -496,25 +562,30 @@ function updateLoadResults(op, load, diode) {
       'Quiescent point on the load line',
     ),
   ];
-  if (diode) {
-    rows.push(loadMetric('ra', fmtOhm(op.ra), 'Plate resistance. How Ip moves with Vp'));
-    rows.push(loadMetric('Zout', fmtOhm(op.zout), 'Rp in parallel with ra'));
-  } else {
-    rows.push(loadMetric('Mu', fmtFix(op.mu, 1), 'Gain. Gm times ra'));
-    rows.push(loadMetric('Gm', fmtFix(op.gm == null ? null : op.gm * 1000, 2, ' mA/V'), 'How Ip moves with Vg'));
-    rows.push(loadMetric('ra', fmtOhm(op.ra), 'Plate resistance. How Ip moves with Vp'));
+  if (!diode) {
+    rows.push(loadMetric('Vc', fmtFix(op.vc, 1, ' V'), 'Supply the load line implies'));
     if (op.rk != null) rows.push(loadMetric('Rk', fmtOhm(op.rk), 'Cathode resistor for this Vg and Ip'));
     rows.push(loadMetric('Pdiss', fmtFix(op.plateDissipation, 2, ' W'), 'Plate heat. Vp times Ip'));
-    rows.push(loadMetric('Vc', fmtFix(op.vc, 1, ' V'), 'Supply the load line implies'));
-    rows.push(loadMetric('Zout', fmtOhm(op.zout), 'Rp in parallel with ra'));
-    rows.push(loadMetric('Zin', fmtOhm(op.zin), 'Grid impedance at 10 kHz'));
   }
   if (isMultiGrid()) {
     rows.push(loadMetric('Ig2', fmtFix(op.ig2 * 1000, 2, ' mA'), 'Screen current at this point'));
     rows.push(loadMetric('Ps', fmtFix(op.screenDissipation, 2, ' W'), 'Screen heat. Vg2 times Ig2'));
   }
-  if (!diode) {
-    rows.push(loadMetric('Pout', fmtFix(op.pout, 3, ' W'), 'Power into Rp at this Vin'));
+  if (diode) {
+    rows.push(loadMetric('Ra', fmtOhm(op.ra), 'Plate resistance. How Ip moves with Vp'));
+    rows.push(loadMetric('Zout', fmtOhm(op.zout), 'Rp in parallel with ra'));
+  } else {
+    rows.push(loadMetric('Gm', fmtFix(op.gm == null ? null : op.gm * 1000, 2, ' mA/V'), 'How Ip moves with Vg'));
+    rows.push(loadMetric('Ra', fmtOhm(op.ra), 'Plate resistance. How Ip moves with Vp'));
+    rows.push(loadMetric('Mu', fmtFix(op.mu, 1), 'Gain. Gm times ra'));
+    rows.push(loadMetric('Zout', fmtOhm(op.zout), 'Rp in parallel with ra'));
+    rows.push(loadMetric('Zin', fmtOhm(op.zin), 'Grid impedance at 10 kHz'));
+    rows.push(loadMetric('Vin rms', fmtFix(levels.vinRms, 2, ' V'), 'Peak grid swing over ?2'));
+    rows.push(loadMetric('Vout pp', fmtFix(levels.voutPp, 1, ' V'), 'Plate voltage from one swing end to the other'));
+    rows.push(loadMetric('Vout rms', fmtFix(levels.voutRms, 2, ' V'), 'Sine equivalent of that plate swing'));
+    rows.push(loadMetric('Iout rms', fmtFix(levels.ioutRms * 1000, 2, ' mA'), 'Sine equivalent of the plate-current swing'));
+    rows.push(loadMetric('Pout', fmtFix(op.pout, 3, ' W'), 'Vout rms times Iout rms'));
+    rows.push(loadMetric('Eff', fmtFix(op.eta * 100, 1, '%'), 'Pout over supply power, plate plus screen'));
     rows.push(loadMetric('THD', fmtFix(op.thd, 2, '%'), 'H2 through H5, combined'));
     rows.push(loadMetric('H2', fmtFix(op.h2, 2, '%'), 'Second harmonic'));
     rows.push(loadMetric('H3', fmtFix(op.h3, 2, '%'), 'Third harmonic'));
@@ -681,6 +752,9 @@ function updateMultiVisibility() {
   $('ulRow').style.display = multi ? '' : 'none';
   $('ulTapRow').style.display = multi && $('ulOn').checked ? '' : 'none';
   $('harmPlot').style.display = diode ? 'none' : '';
+  $('loadOptRow').style.display = diode ? 'none' : '';
+  $('loadThdRow').style.display = diode ? 'none' : '';
+  $('loadOptHint').style.display = diode ? 'none' : '';
   if (sliderApi) sliderApi.setMultiGrid(multi);
 }
 
@@ -809,13 +883,7 @@ function writePersist() {
       eg2: $('eg2').value,
       showScreenCurves: $('showScreenCurves').checked,
       load: { ...readLoadUi(), userPlaced: loadPlaced },
-      child: {
-        VGOFF: Number($('VGOFF').value),
-        IGA: Number($('IGA').value),
-        IGB: Number($('IGB').value),
-        IGC: Number($('IGC').value),
-        IGEX: Number($('IGEX').value),
-      },
+      child: Object.fromEntries(CHILD_KEYS.map((key) => [key, Number($(key).value)])),
       guides: state.guides,
       screenGuides: state.screenGuides,
       calib: {
@@ -887,7 +955,7 @@ function restore() {
     for (const [key, id] of Object.entries(map)) {
       if (typeof data.load[key] === 'boolean') $(id).checked = data.load[key];
     }
-    const fields = { rp: 'loadRp', vp: 'loadVp', vg: 'loadVg', vin: 'loadVin', pmax: 'loadPmax', ul: 'ulTap' };
+    const fields = { rp: 'loadRp', vp: 'loadVp', vg: 'loadVg', vin: 'loadVin', pmax: 'loadPmax', thdMax: 'loadThd', ul: 'ulTap' };
     for (const [key, id] of Object.entries(fields)) {
       if (Number.isFinite(data.load[key])) $(id).value = data.load[key];
     }
@@ -897,7 +965,7 @@ function restore() {
     loadPlaced = data.load.userPlaced === true;
   }
   if (data.child) {
-    for (const key of ['VGOFF', 'IGA', 'IGB', 'IGC', 'IGEX']) {
+    for (const key of CHILD_KEYS) {
       if (Number.isFinite(data.child[key])) $(key).value = data.child[key];
     }
     Object.assign(state.params, data.child);
@@ -953,11 +1021,11 @@ function bindUi() {
 
   for (const id of [
     'vgList', 'vpMax', 'ipMax', 'eg2', 'vpSteps', 'curveColor', 'imageOpacity',
-    'loadRp', 'loadVp', 'loadVg', 'loadVin', 'loadPmax', 'ulTap',
-    'VGOFF', 'IGA', 'IGB', 'IGC', 'IGEX',
+    'loadRp', 'loadVp', 'loadVg', 'loadVin', 'loadPmax', 'loadThd', 'ulTap',
+    ...CHILD_KEYS,
   ]) {
     $(id).addEventListener('input', () => {
-      if (['VGOFF', 'IGA', 'IGB', 'IGC', 'IGEX'].includes(id)) {
+      if (CHILD_KEYS.includes(id)) {
         const n = Number($(id).value);
         if (Number.isFinite(n)) state.params[id] = n;
       }
@@ -995,6 +1063,7 @@ function bindUi() {
   }
 
   $('btnNewTube').addEventListener('click', () => resetToFormulaDefaults());
+  $('btnBestLoad').addEventListener('click', () => applyBestLoadLine());
 
   $('btnFitGuides').addEventListener('click', () => runGuideFit());
   $('btnUndoGuide').addEventListener('click', () => undoActiveGuide());

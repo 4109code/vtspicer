@@ -130,6 +130,14 @@
           <input id="loadPmax" type="number" value="1" step="0.1" />
         </div>
         <label class="check load-check"><input type="checkbox" id="showPmax" checked /> Dissipation curve <span class="param-hint">Ip = Pmax / Vp</span></label>
+        <div class="load-field" id="loadThdRow">
+          <span class="param-name"><span class="param-key">THD</span><span class="param-hint">Acceptable distortion for Best Q-point, percent</span></span>
+          <input id="loadThd" type="number" value="1" min="0" step="0.1" />
+        </div>
+        <div class="row" id="loadOptRow">
+          <button type="button" id="btnBestLoad" class="primary">Best Q-point</button>
+        </div>
+        <p id="loadOptHint" class="param-hint">Most output power at or below Acceptable THD. Plate heat stays within Pmax</p>
         <label id="showIgRow" class="check load-check"><input type="checkbox" id="showIg" /> Grid current <span class="param-hint">Ig along each Vg curve</span></label>
         <div class="load-field" id="igModeRow">
           <span class="param-name"><span class="param-key">Ig</span><span class="param-hint">Diode uses RGI. Child law is a power of Vg</span></span>

@@ -3,7 +3,7 @@
  * Plate guides match Ip. Screen guides match Ig2.
  */
 
-import { fitToTargets, getModel, plateCurrent, plateFitKeys, screenCurrent } from '/lib/tube.js';
+import { fitToTargets, getModel, plateCurrent, plateFitKeys, targetCurrent } from '/lib/tube.js';
 
 /**
  * @typedef {{ vg: number, points: { u: number, v: number }[] }} GuideCurve
@@ -76,10 +76,7 @@ function rms(modelId, type, params, targets) {
   if (!targets.length) return null;
   let err = 0;
   for (const t of targets) {
-    const pred =
-      t.kind === 'screen'
-        ? screenCurrent(modelId, type, t.Eg, t.Ep, t.Eg2, params)
-        : plateCurrent(modelId, type, t.Eg, t.Ep, t.Eg2, params);
+    const pred = targetCurrent(modelId, type, t, params);
     err += (pred - t.ip) ** 2;
   }
   return Math.sqrt(err / targets.length);

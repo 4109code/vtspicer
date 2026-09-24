@@ -112,7 +112,7 @@ html, body {
 
 .load-metric {
   display: grid;
-  grid-template-columns: 4.6rem minmax(0, 1fr);
+  grid-template-columns: 5.4rem minmax(0, 1fr);
   column-gap: 0.35rem;
   margin-bottom: 0.35rem;
   font-size: 0.75rem;

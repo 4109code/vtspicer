@@ -13,7 +13,7 @@
     "sweep": {
       "vgList": "0",
       "vpMax": 100,
-      "ipMax": 1
+      "ipMax": 0.1
     }
   },
   {
@@ -30,7 +30,7 @@
     "sweep": {
       "vgList": "0",
       "vpMax": 100,
-      "ipMax": 2
+      "ipMax": 0.2
     }
   },
   {
@@ -47,7 +47,7 @@
     "sweep": {
       "vgList": "0",
       "vpMax": 100,
-      "ipMax": 2
+      "ipMax": 0.2
     }
   },
   {
@@ -63,7 +63,7 @@
     "sweep": {
       "vgList": "0",
       "vpMax": 100,
-      "ipMax": 2
+      "ipMax": 0.2
     }
   },
   {
@@ -79,7 +79,7 @@
     "sweep": {
       "vgList": "0",
       "vpMax": 100,
-      "ipMax": 0.5
+      "ipMax": 0.05
     }
   },
   {
@@ -96,7 +96,7 @@
     "sweep": {
       "vgList": "0",
       "vpMax": 100,
-      "ipMax": 1
+      "ipMax": 0.1
     }
   },
   {
@@ -113,7 +113,7 @@
     "sweep": {
       "vgList": "0",
       "vpMax": 100,
-      "ipMax": 5
+      "ipMax": 0.5
     }
   },
   {
@@ -130,7 +130,7 @@
     "sweep": {
       "vgList": "0",
       "vpMax": 100,
-      "ipMax": 5
+      "ipMax": 0.5
     }
   },
   {
@@ -147,7 +147,7 @@
     "sweep": {
       "vgList": "0",
       "vpMax": 100,
-      "ipMax": 2
+      "ipMax": 0.2
     }
   }
 ]

@@ -20,7 +20,7 @@
     "sweep": {
       "vgList": "0:-1:-9",
       "vpMax": 400,
-      "ipMax": 0.1
+      "ipMax": 0.01
     }
   },
   {
@@ -44,7 +44,7 @@
     "sweep": {
       "vgList": "0:-2:-24",
       "vpMax": 350,
-      "ipMax": 0.1
+      "ipMax": 0.01
     }
   },
   {
@@ -68,7 +68,7 @@
     "sweep": {
       "vgList": "0:-0.5:-5",
       "vpMax": 400,
-      "ipMax": 0.02
+      "ipMax": 0.002
     }
   },
   {
@@ -92,7 +92,7 @@
     "sweep": {
       "vgList": "0:-20:-140",
       "vpMax": 500,
-      "ipMax": 2
+      "ipMax": 0.2
     }
   },
   {
@@ -116,7 +116,7 @@
     "sweep": {
       "vgList": "0:-20:-140",
       "vpMax": 500,
-      "ipMax": 2
+      "ipMax": 0.2
     }
   },
   {
@@ -140,7 +140,7 @@
     "sweep": {
       "vgList": "0:-10:-90",
       "vpMax": 500,
-      "ipMax": 2
+      "ipMax": 0.2
     }
   },
   {
@@ -164,7 +164,7 @@
     "sweep": {
       "vgList": "0:-1:-8",
       "vpMax": 350,
-      "ipMax": 1
+      "ipMax": 0.1
     }
   },
   {
@@ -188,7 +188,7 @@
     "sweep": {
       "vgList": "0:-2:-24",
       "vpMax": 350,
-      "ipMax": 0.2
+      "ipMax": 0.02
     }
   },
   {
@@ -212,7 +212,7 @@
     "sweep": {
       "vgList": "0:-20:-140",
       "vpMax": 500,
-      "ipMax": 2
+      "ipMax": 0.2
     }
   },
   {
@@ -236,7 +236,7 @@
     "sweep": {
       "vgList": "0:-2:-20",
       "vpMax": 350,
-      "ipMax": 0.1
+      "ipMax": 0.01
     }
   },
   {
@@ -260,7 +260,7 @@
     "sweep": {
       "vgList": "0:-1:-9",
       "vpMax": 400,
-      "ipMax": 0.2
+      "ipMax": 0.02
     }
   },
   {
@@ -284,7 +284,7 @@
     "sweep": {
       "vgList": "0:-2:-14",
       "vpMax": 350,
-      "ipMax": 0.2
+      "ipMax": 0.02
     }
   },
   {
@@ -308,7 +308,7 @@
     "sweep": {
       "vgList": "0:-1:-8",
       "vpMax": 350,
-      "ipMax": 1
+      "ipMax": 0.1
     }
   },
   {
@@ -332,7 +332,7 @@
     "sweep": {
       "vgList": "0:-0.5:-4.5",
       "vpMax": 400,
-      "ipMax": 0.2
+      "ipMax": 0.02
     }
   },
   {
@@ -356,7 +356,7 @@
     "sweep": {
       "vgList": "0:-5:-50",
       "vpMax": 350,
-      "ipMax": 2
+      "ipMax": 0.2
     }
   },
   {
@@ -380,7 +380,7 @@
     "sweep": {
       "vgList": "0:-1:-8",
       "vpMax": 400,
-      "ipMax": 0.02
+      "ipMax": 0.002
     }
   },
   {
@@ -404,7 +404,7 @@
     "sweep": {
       "vgList": "0:-10:-70",
       "vpMax": 500,
-      "ipMax": 2
+      "ipMax": 0.2
     }
   },
   {
@@ -428,7 +428,7 @@
     "sweep": {
       "vgList": "0:-1:-7",
       "vpMax": 400,
-      "ipMax": 0.1
+      "ipMax": 0.01
     }
   },
   {
@@ -452,7 +452,7 @@
     "sweep": {
       "vgList": "0:-0.5:-5.5",
       "vpMax": 400,
-      "ipMax": 0.01
+      "ipMax": 0.001
     }
   },
   {
@@ -476,7 +476,7 @@
     "sweep": {
       "vgList": "0:-1:-8",
       "vpMax": 400,
-      "ipMax": 0.02
+      "ipMax": 0.002
     }
   },
   {
@@ -500,7 +500,7 @@
     "sweep": {
       "vgList": "0:-1:-8",
       "vpMax": 400,
-      "ipMax": 1
+      "ipMax": 0.1
     }
   },
   {
@@ -524,7 +524,7 @@
     "sweep": {
       "vgList": "0:-2:-14",
       "vpMax": 350,
-      "ipMax": 0.2
+      "ipMax": 0.02
     }
   },
   {
@@ -548,7 +548,7 @@
     "sweep": {
       "vgList": "0:-1:-12",
       "vpMax": 350,
-      "ipMax": 0.05
+      "ipMax": 0.005
     }
   },
   {
@@ -572,7 +572,7 @@
     "sweep": {
       "vgList": "0:-1:-12",
       "vpMax": 350,
-      "ipMax": 0.2
+      "ipMax": 0.02
     }
   },
   {
@@ -596,7 +596,7 @@
     "sweep": {
       "vgList": "0:-1:-11",
       "vpMax": 400,
-      "ipMax": 0.1
+      "ipMax": 0.01
     }
   },
   {
@@ -620,7 +620,7 @@
     "sweep": {
       "vgList": "0:-1:-10",
       "vpMax": 350,
-      "ipMax": 0.2
+      "ipMax": 0.02
     }
   },
   {
@@ -644,7 +644,7 @@
     "sweep": {
       "vgList": "0:-1:-12",
       "vpMax": 350,
-      "ipMax": 0.1
+      "ipMax": 0.01
     }
   },
   {
@@ -668,7 +668,7 @@
     "sweep": {
       "vgList": "0:-1:-8",
       "vpMax": 400,
-      "ipMax": 0.5
+      "ipMax": 0.05
     }
   },
   {
@@ -692,7 +692,7 @@
     "sweep": {
       "vgList": "0:-2:-20",
       "vpMax": 350,
-      "ipMax": 0.5
+      "ipMax": 0.05
     }
   },
   {
@@ -716,7 +716,7 @@
     "sweep": {
       "vgList": "0:-2:-22",
       "vpMax": 350,
-      "ipMax": 0.1
+      "ipMax": 0.01
     }
   },
   {
@@ -740,7 +740,7 @@
     "sweep": {
       "vgList": "0:-1:-8",
       "vpMax": 400,
-      "ipMax": 0.2
+      "ipMax": 0.02
     }
   },
   {
@@ -764,7 +764,7 @@
     "sweep": {
       "vgList": "0:-50:-300",
       "vpMax": 500,
-      "ipMax": 5
+      "ipMax": 0.5
     }
   },
   {
@@ -788,7 +788,7 @@
     "sweep": {
       "vgList": "0:-1:-10",
       "vpMax": 350,
-      "ipMax": 0.1
+      "ipMax": 0.01
     }
   },
   {
@@ -812,7 +812,7 @@
     "sweep": {
       "vgList": "0:-2:-14",
       "vpMax": 350,
-      "ipMax": 0.2
+      "ipMax": 0.02
     }
   },
   {
@@ -836,7 +836,7 @@
     "sweep": {
       "vgList": "0:-5:-30",
       "vpMax": 350,
-      "ipMax": 0.5
+      "ipMax": 0.05
     }
   },
   {
@@ -860,7 +860,7 @@
     "sweep": {
       "vgList": "0:-2:-22",
       "vpMax": 350,
-      "ipMax": 0.5
+      "ipMax": 0.05
     }
   },
   {
@@ -884,7 +884,7 @@
     "sweep": {
       "vgList": "0:-0.5:-5.5",
       "vpMax": 400,
-      "ipMax": 0.02
+      "ipMax": 0.002
     }
   },
   {
@@ -908,7 +908,7 @@
     "sweep": {
       "vgList": "0:-5:-25",
       "vpMax": 350,
-      "ipMax": 1
+      "ipMax": 0.1
     }
   },
   {
@@ -932,7 +932,7 @@
     "sweep": {
       "vgList": "0:-1:-11",
       "vpMax": 350,
-      "ipMax": 0.2
+      "ipMax": 0.02
     }
   },
   {
@@ -956,7 +956,7 @@
     "sweep": {
       "vgList": "0:-1:-11",
       "vpMax": 350,
-      "ipMax": 0.2
+      "ipMax": 0.02
     }
   },
   {
@@ -980,7 +980,7 @@
     "sweep": {
       "vgList": "0:-2:-18",
       "vpMax": 350,
-      "ipMax": 0.5
+      "ipMax": 0.05
     }
   },
   {
@@ -1004,7 +1004,7 @@
     "sweep": {
       "vgList": "0:-2:-24",
       "vpMax": 350,
-      "ipMax": 0.5
+      "ipMax": 0.05
     }
   },
   {
@@ -1028,7 +1028,7 @@
     "sweep": {
       "vgList": "0:-1:-11",
       "vpMax": 350,
-      "ipMax": 0.05
+      "ipMax": 0.005
     }
   },
   {
@@ -1052,7 +1052,7 @@
     "sweep": {
       "vgList": "0:-2:-18",
       "vpMax": 350,
-      "ipMax": 0.1
+      "ipMax": 0.01
     }
   },
   {
@@ -1076,7 +1076,7 @@
     "sweep": {
       "vgList": "0:-1:-7",
       "vpMax": 400,
-      "ipMax": 0.02
+      "ipMax": 0.002
     }
   },
   {
@@ -1100,7 +1100,7 @@
     "sweep": {
       "vgList": "0:-10:-70",
       "vpMax": 500,
-      "ipMax": 1
+      "ipMax": 0.1
     }
   },
   {
@@ -1124,7 +1124,7 @@
     "sweep": {
       "vgList": "0:-2:-20",
       "vpMax": 350,
-      "ipMax": 0.5
+      "ipMax": 0.05
     }
   },
   {
@@ -1148,7 +1148,7 @@
     "sweep": {
       "vgList": "0:-2:-16",
       "vpMax": 350,
-      "ipMax": 0.5
+      "ipMax": 0.05
     }
   },
   {
@@ -1172,7 +1172,7 @@
     "sweep": {
       "vgList": "0:-5:-40",
       "vpMax": 350,
-      "ipMax": 0.5
+      "ipMax": 0.05
     }
   },
   {
@@ -1196,7 +1196,7 @@
     "sweep": {
       "vgList": "0:-10:-90",
       "vpMax": 500,
-      "ipMax": 5
+      "ipMax": 0.5
     }
   },
   {
@@ -1220,7 +1220,7 @@
     "sweep": {
       "vgList": "0:-10:-90",
       "vpMax": 500,
-      "ipMax": 1
+      "ipMax": 0.1
     }
   },
   {
@@ -1244,7 +1244,7 @@
     "sweep": {
       "vgList": "0:-20:-140",
       "vpMax": 500,
-      "ipMax": 10
+      "ipMax": 1
     }
   },
   {
@@ -1268,7 +1268,7 @@
     "sweep": {
       "vgList": "0:-10:-80",
       "vpMax": 500,
-      "ipMax": 0.5
+      "ipMax": 0.05
     }
   },
   {
@@ -1292,7 +1292,7 @@
     "sweep": {
       "vgList": "0:-2:-20",
       "vpMax": 350,
-      "ipMax": 0.5
+      "ipMax": 0.05
     }
   },
   {
@@ -1316,7 +1316,7 @@
     "sweep": {
       "vgList": "0:-10:-80",
       "vpMax": 500,
-      "ipMax": 5
+      "ipMax": 0.5
     }
   },
   {
@@ -1340,7 +1340,7 @@
     "sweep": {
       "vgList": "0:-0.5:-6",
       "vpMax": 400,
-      "ipMax": 0.05
+      "ipMax": 0.005
     }
   },
   {
@@ -1364,7 +1364,7 @@
     "sweep": {
       "vgList": "0:-20:-220",
       "vpMax": 500,
-      "ipMax": 10
+      "ipMax": 1
     }
   },
   {
@@ -1388,7 +1388,7 @@
     "sweep": {
       "vgList": "0:-20:-220",
       "vpMax": 500,
-      "ipMax": 20
+      "ipMax": 2
     }
   },
   {
@@ -1412,7 +1412,7 @@
     "sweep": {
       "vgList": "0:-1:-7",
       "vpMax": 400,
-      "ipMax": 2
+      "ipMax": 0.2
     }
   },
   {
@@ -1436,7 +1436,7 @@
     "sweep": {
       "vgList": "0:-50:-300",
       "vpMax": 500,
-      "ipMax": 10
+      "ipMax": 1
     }
   },
   {
@@ -1460,7 +1460,7 @@
     "sweep": {
       "vgList": "0:-1:-8",
       "vpMax": 400,
-      "ipMax": 1
+      "ipMax": 0.1
     }
   },
   {
@@ -1484,7 +1484,7 @@
     "sweep": {
       "vgList": "0:-20:-140",
       "vpMax": 500,
-      "ipMax": 1
+      "ipMax": 0.1
     }
   },
   {
@@ -1508,7 +1508,7 @@
     "sweep": {
       "vgList": "0:-2:-18",
       "vpMax": 400,
-      "ipMax": 0.5
+      "ipMax": 0.05
     }
   },
   {
@@ -1532,7 +1532,7 @@
     "sweep": {
       "vgList": "0:-1:-9",
       "vpMax": 400,
-      "ipMax": 0.2
+      "ipMax": 0.02
     }
   },
   {
@@ -1556,7 +1556,7 @@
     "sweep": {
       "vgList": "0:-2:-16",
       "vpMax": 350,
-      "ipMax": 0.1
+      "ipMax": 0.01
     }
   },
   {
@@ -1580,7 +1580,7 @@
     "sweep": {
       "vgList": "0:-1:-7",
       "vpMax": 400,
-      "ipMax": 0.05
+      "ipMax": 0.005
     }
   },
   {
@@ -1604,7 +1604,7 @@
     "sweep": {
       "vgList": "0:-2:-18",
       "vpMax": 350,
-      "ipMax": 0.1
+      "ipMax": 0.01
     }
   },
   {
@@ -1628,7 +1628,7 @@
     "sweep": {
       "vgList": "0:-50:-250",
       "vpMax": 500,
-      "ipMax": 10
+      "ipMax": 1
     }
   },
   {
@@ -1652,7 +1652,7 @@
     "sweep": {
       "vgList": "0:-2:-22",
       "vpMax": 350,
-      "ipMax": 0.2
+      "ipMax": 0.02
     }
   },
   {
@@ -1676,7 +1676,7 @@
     "sweep": {
       "vgList": "0:-1:-9",
       "vpMax": 400,
-      "ipMax": 0.1
+      "ipMax": 0.01
     }
   },
   {
@@ -1700,7 +1700,7 @@
     "sweep": {
       "vgList": "0:-2:-16",
       "vpMax": 400,
-      "ipMax": 0.2
+      "ipMax": 0.02
     }
   },
   {
@@ -1724,7 +1724,7 @@
     "sweep": {
       "vgList": "0:-2:-14",
       "vpMax": 350,
-      "ipMax": 0.1
+      "ipMax": 0.01
     }
   },
   {
@@ -1748,7 +1748,7 @@
     "sweep": {
       "vgList": "0:-10:-110",
       "vpMax": 500,
-      "ipMax": 5
+      "ipMax": 0.5
     }
   },
   {
@@ -1772,7 +1772,7 @@
     "sweep": {
       "vgList": "0:-2:-22",
       "vpMax": 350,
-      "ipMax": 0.5
+      "ipMax": 0.05
     }
   },
   {
@@ -1796,7 +1796,7 @@
     "sweep": {
       "vgList": "0:-1:-11",
       "vpMax": 350,
-      "ipMax": 0.2
+      "ipMax": 0.02
     }
   },
   {
@@ -1820,7 +1820,7 @@
     "sweep": {
       "vgList": "0:-10:-110",
       "vpMax": 500,
-      "ipMax": 1
+      "ipMax": 0.1
     }
   },
   {
@@ -1845,7 +1845,7 @@
     "sweep": {
       "vgList": "0:-0.5:-4",
       "vpMax": 400,
-      "ipMax": 0.006
+      "ipMax": 0.0006
     }
   },
   {
@@ -1869,7 +1869,7 @@
     "sweep": {
       "vgList": "0:-0.5:-4",
       "vpMax": 400,
-      "ipMax": 0.006
+      "ipMax": 0.0006
     }
   },
   {
@@ -1893,7 +1893,7 @@
     "sweep": {
       "vgList": "0:-0.5:-4",
       "vpMax": 400,
-      "ipMax": 0.006
+      "ipMax": 0.0006
     }
   }
 ]

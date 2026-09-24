@@ -5,30 +5,31 @@
 import { fitToTargets, plateCurrent } from '/lib/tube.js';
 
 /**
- * @typedef {{ vg: number, points: { vp: number, ip: number }[] }} GuideCurve
+ * @typedef {{ vg: number, points: { u: number, v: number }[] }} GuideCurve
  */
 
 export function countGuidePoints(guides) {
   return (guides || []).reduce((n, g) => n + (g.points?.length || 0), 0);
 }
 
-function guidesToTargets(guides, eg2 = 0) {
+function guidesToTargets(guides, eg2, toData) {
   const targets = [];
   for (const g of guides || []) {
     for (const pt of g.points || []) {
+      const data = toData(pt.u, pt.v);
       targets.push({
         Eg: g.vg,
-        Ep: Math.max(0, pt.vp),
+        Ep: Math.max(0, data.vp),
         Eg2: eg2,
-        ip: Math.max(0, pt.ip),
+        ip: Math.max(0, data.ip),
       });
     }
   }
   return targets;
 }
 
-export function fitParamsToGuides(modelId, type, params, guides, eg2 = 0) {
-  const targets = guidesToTargets(guides, eg2);
+export function fitParamsToGuides(modelId, type, params, guides, eg2 = 0, toData) {
+  const targets = guidesToTargets(guides, eg2, toData);
   if (targets.length < 2) {
     return { params, meta: { ok: false, reason: 'need ≥2 points' } };
   }
@@ -58,15 +59,15 @@ export function cloneGuides(guides) {
   }));
 }
 
-export function addGuidePoint(guides, vg, vp, ip) {
+export function addGuidePoint(guides, vg, u, v) {
   const list = cloneGuides(guides);
   let curve = list.find((g) => Math.abs(g.vg - vg) < 1e-9);
   if (!curve) {
     curve = { vg, points: [] };
     list.push(curve);
   }
-  curve.points.push({ vp, ip });
-  curve.points.sort((a, b) => a.vp - b.vp);
+  curve.points.push({ u, v });
+  curve.points.sort((a, b) => a.u - b.u);
   list.sort((a, b) => b.vg - a.vg);
   return list;
 }
@@ -93,7 +94,7 @@ export function hitGuidePoint(plot, guides, x, y, radius = 10) {
   let bestD = r2;
   (guides || []).forEach((g, gi) => {
     g.points.forEach((pt, pi) => {
-      const p = plot.dataToPx(pt.vp, pt.ip);
+      const p = plot.unitToPx(pt.u, pt.v);
       const d = (p.x - x) ** 2 + (p.y - y) ** 2;
       if (d <= bestD) {
         bestD = d;

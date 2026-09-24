@@ -3,9 +3,9 @@
  */
 
 const STEP_MSGS = [
-  'Click on the graph 0 on the image',
-  'Click on the Vpmax',
-  'Click on the IpMax',
+  'Click on the graph 0',
+  'Click on the Vpmax (end of X axis)',
+  'Click on the Ipmax (end of Y axis)',
 ];
 
 export class Calibrator {
@@ -29,7 +29,7 @@ export class Calibrator {
   cancel() {
     this.active = false;
     this.step = 0;
-    this._set('Calibration cancelled.');
+    this._set('Calibration cancelled');
   }
 
   /**
@@ -48,11 +48,13 @@ export class Calibrator {
       this._set(STEP_MSGS[2]);
     } else if (this.step === 2) {
       c.ipMaxPx = { x: local.x, y: local.y };
+      c.vpScale = c.vpMax;
+      c.ipScale = c.ipMax;
       this.active = false;
       this.step = 0;
       const ipMa = +(c.ipMax * 1000).toFixed(3);
       this._set(
-        `Calibrated: origin→Vpmax→Ipmax. Vp max=${c.vpMax} V, Ip max=${ipMa} mA.`,
+        `Calibrated: Origin → Vpmax → Ipmax. Vp max=${c.vpMax} V, Ip max=${ipMa} mA.`,
       );
     }
     return true;

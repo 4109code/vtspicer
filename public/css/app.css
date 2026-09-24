@@ -279,10 +279,6 @@ button.danger:hover {
   position: relative;
 }
 
-body.is-calibrating #plot {
-  cursor: cell;
-}
-
 #plot {
   display: block;
   width: 100%;

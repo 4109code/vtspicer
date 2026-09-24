@@ -73,7 +73,6 @@ function activeModel() {
 }
 
 function syncCalibUi(cal) {
-  document.body.classList.toggle('is-calibrating', cal.active);
   const btn = $('btnCalibrate');
   btn.textContent = cal.active ? 'Cancel calibration' : 'Calibrate axes';
   btn.classList.toggle('primary', !cal.active);
@@ -96,10 +95,18 @@ function applyAxisDefaults() {
   setIpMaxMa(defaultIpMaxMa(state.type));
 }
 
-/** Guide points are absolute currents. Shrinking Ip max (pentode 100 mA → triode 10 mA) would throw them above the plot. */
-function applyAxisDefaultsForModelChange() {
-  if (countGuidePoints(state.guides) > 0) return;
-  applyAxisDefaults();
+/** Turn saved {vp, ip} points into axis fractions using the scale they were stored against. */
+function migrateGuides(guides, vpMax, ipMax) {
+  return (guides || []).map((g) => ({
+    vg: g.vg,
+    points: (g.points || []).map((p) => {
+      if (Number.isFinite(p.u) && Number.isFinite(p.v)) return { u: p.u, v: p.v };
+      return {
+        u: vpMax > 0 ? p.vp / vpMax : 0,
+        v: ipMax > 0 ? p.ip / ipMax : 0,
+      };
+    }),
+  }));
 }
 
 function setIpMaxMa(ampsOrMa, { fromAmps = false } = {}) {
@@ -224,6 +231,7 @@ function runGuideFit() {
     state.params,
     state.guides,
     eg2,
+    (u, v) => plot.unitToData(u, v),
   );
   if (!meta.ok) {
     updateDrawStatus(meta.reason || 'Need at least 2 guide points.');
@@ -298,7 +306,7 @@ function switchModel(modelId, { resetParams = true } = {}) {
   $('modelNote').hidden = true;
   rebuildSliders();
   refreshPresetOptions();
-  if (!$('presetSelect').value) applyAxisDefaultsForModelChange();
+  if (!$('presetSelect').value) applyAxisDefaults();
   if (countGuidePoints(state.guides) >= 2) {
     runGuideFit();
   } else {
@@ -384,6 +392,8 @@ function writePersist() {
         origin: plot.calib.origin,
         vpMaxPx: plot.calib.vpMaxPx,
         ipMaxPx: plot.calib.ipMaxPx,
+        vpScale: plot.calib.vpScale,
+        ipScale: plot.calib.ipScale,
       },
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
@@ -425,15 +435,27 @@ function restore() {
     if (typeof data.showScreenCurves === 'boolean') {
       $('showScreenCurves').checked = data.showScreenCurves;
     }
-    if (Array.isArray(data.guides)) {
-      state.guides = data.guides;
-      plot.guides = state.guides;
-    }
     if (data.calib) {
       Object.assign(plot.calib, data.calib);
       if (plot.isCalibrated()) {
+        if (!(plot.calib.vpScale > 0)) plot.calib.vpScale = Number(data.vpMax) || plot.calib.vpMax;
+        if (!(plot.calib.ipScale > 0)) {
+          const n = Number(data.ipMax);
+          plot.calib.ipScale = n > 0 && n < 1 ? n : (Number.isFinite(n) ? n / 1000 : plot.calib.ipMax);
+        }
         $('calibStatus').textContent = 'Restored previous axis calibration.';
       }
+    }
+    if (Array.isArray(data.guides)) {
+      const vpMax = plot.calib.vpScale > 0 ? plot.calib.vpScale : Number(data.vpMax) || 400;
+      const ipRaw = Number(data.ipMax);
+      const ipMax = plot.calib.ipScale > 0
+        ? plot.calib.ipScale
+        : ipRaw > 0 && ipRaw < 1
+          ? ipRaw
+          : (Number.isFinite(ipRaw) ? ipRaw / 1000 : 0.01);
+      state.guides = migrateGuides(data.guides, vpMax, ipMax);
+      plot.guides = state.guides;
     }
   } catch {
     /* ignore */
@@ -460,7 +482,7 @@ function bindUi() {
       ...defaultParams(state.modelId, state.type),
       ...state.params,
     });
-    if (!$('presetSelect').value) applyAxisDefaultsForModelChange();
+    if (!$('presetSelect').value) applyAxisDefaults();
     rebuildSliders();
     updateMultiVisibility();
     scheduleRedraw();
@@ -660,11 +682,11 @@ function onClick(evt) {
     return;
   }
 
-  const data = plot.pxToData(local.x, local.y);
+  const unit = plot.pxToUnit(local.x, local.y);
   const vg = Number($('drawVg').value);
   if (!Number.isFinite(vg)) return;
   setGuides(
-    addGuidePoint(state.guides, vg, data.vp, Math.max(0, data.ip)),
+    addGuidePoint(state.guides, vg, unit.u, Math.max(0, unit.v)),
     { fit: true },
   );
 }
@@ -695,15 +717,16 @@ function onPointerMove(evt) {
   if (!drag) return;
 
   drag.moved = true;
+  const unit = plot.pxToUnit(local.x, local.y);
   const guides = cloneGuides(state.guides);
   const curve = guides[drag.gi];
   if (!curve) return;
-  curve.points[drag.pi] = { vp: data.vp, ip: Math.max(0, data.ip) };
-  curve.points.sort((a, b) => a.vp - b.vp);
+  curve.points[drag.pi] = { u: unit.u, v: Math.max(0, unit.v) };
+  curve.points.sort((a, b) => a.u - b.u);
   let bestPi = 0;
   let bestD = Infinity;
   curve.points.forEach((pt, i) => {
-    const d = (pt.vp - data.vp) ** 2 + (pt.ip - data.ip) ** 2;
+    const d = (pt.u - unit.u) ** 2 + (pt.v - unit.v) ** 2;
     if (d < bestD) {
       bestD = d;
       bestPi = i;

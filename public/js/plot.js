@@ -23,6 +23,9 @@ export class Plot {
       ipMaxPx: null,
       vpMax: 400,
       ipMax: 0.01,
+      /** Axis end values captured when calibration finished. Guides use these, not the live sweep maxima. */
+      vpScale: null,
+      ipScale: null,
     };
     this.curves = [];
     this.screenCurves = [];
@@ -106,6 +109,53 @@ export class Plot {
       vp: ((x - box.x) / box.w) * c.vpMax,
       ip: ((box.y + box.h - y) / box.h) * c.ipMax,
     };
+  }
+
+  /**
+   * Fraction along the calibrated axes (or the plot box). Independent of the
+   * numeric Vp/Ip maxima, so a guide stays on the datasheet when those change.
+   */
+  pxToUnit(x, y) {
+    if (this.isCalibrated()) {
+      const b = this.calibBasis();
+      const dx = x - b.ox;
+      const dy = y - b.oy;
+      const det = b.vx * b.iy - b.vy * b.ix;
+      if (Math.abs(det) < 1e-9) return { u: 0, v: 0 };
+      return {
+        u: (dx * b.iy - dy * b.ix) / det,
+        v: (b.vx * dy - b.vy * dx) / det,
+      };
+    }
+    const box = this.plotBox();
+    return {
+      u: (x - box.x) / box.w,
+      v: (box.y + box.h - y) / box.h,
+    };
+  }
+
+  unitToPx(u, v) {
+    if (this.isCalibrated()) {
+      const b = this.calibBasis();
+      return {
+        x: b.ox + u * b.vx + v * b.ix,
+        y: b.oy + u * b.vy + v * b.iy,
+      };
+    }
+    const box = this.plotBox();
+    return {
+      x: box.x + u * box.w,
+      y: box.y + box.h - v * box.h,
+    };
+  }
+
+  /** Volts/amps for a guide fraction: calibrated scale when set, else the live maxima. */
+  unitToData(u, v) {
+    const c = this.calib;
+    const useScale = this.isCalibrated() && c.vpScale > 0 && c.ipScale > 0;
+    const vpMax = useScale ? c.vpScale : c.vpMax;
+    const ipMax = useScale ? c.ipScale : c.ipMax;
+    return { vp: u * vpMax, ip: v * ipMax };
   }
 
   plotBox() {
@@ -346,7 +396,7 @@ export class Plot {
     for (const g of this.guides) {
       const pts = g.points || [];
       if (!pts.length) continue;
-      const px = pts.map((pt) => this.dataToPx(pt.vp, pt.ip));
+      const px = pts.map((pt) => this.unitToPx(pt.u, pt.v));
 
       ctx.save();
       ctx.setLineDash([7, 5]);

@@ -1,7 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  curveFamily,
   fitToTargets,
   plateCurrent,
   screenCurrent,
@@ -68,40 +67,6 @@ describe('fitToTargets', () => {
     assert.equal(fitted.DD1, 0);
     assert.equal(fitted.DD2, 0);
     assert.equal(fitted.VD1, 30);
-  });
-
-  it('fits ayumi guides without collapsing the family onto an axis', () => {
-    const start = { ...getModel('ayumi').defaults.triode };
-    const guides = [
-      { Eg: 1, Ep: 40, ip: 0.005 },
-      { Eg: 1, Ep: 120, ip: 0.012 },
-      { Eg: 0, Ep: 80, ip: 0.004 },
-    ];
-    const fitted = fitToTargets('ayumi', 'triode', start, guides, {
-      iterations: 90,
-      damping: 0.45,
-    });
-    assert.ok(fitted.MUM > fitted.MUC, `MUM=${fitted.MUM} MUC=${fitted.MUC}`);
-
-    const sweep = { vgList: [0, -1, -2, -3], vpMax: 400, vpSteps: 25 };
-    const ips = curveFamily('ayumi', 'triode', fitted, sweep).flatMap((c) =>
-      c.points.map((p) => p.ip),
-    );
-    const startMax = Math.max(
-      ...curveFamily('ayumi', 'triode', start, sweep).flatMap((c) => c.points.map((p) => p.ip)),
-    );
-    const max = Math.max(...ips);
-    assert.ok(ips.every((v) => Number.isFinite(v) && v >= 0));
-    assert.ok(max > 5e-4, `max=${max}`);
-    assert.ok(max < Math.max(startMax, 0.012) * 6, `max=${max}`);
-
-    let err0 = 0;
-    let err1 = 0;
-    for (const t of guides) {
-      err0 += (plateCurrent('ayumi', 'triode', t.Eg, t.Ep, 0, start) - t.ip) ** 2;
-      err1 += (plateCurrent('ayumi', 'triode', t.Eg, t.Ep, 0, fitted) - t.ip) ** 2;
-    }
-    assert.ok(err1 < err0 * 0.5, `err ${err0} -> ${err1}`);
   });
 
   it('recovers Koren KG2 from screen targets and leaves the plate scale alone', () => {

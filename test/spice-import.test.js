@@ -78,7 +78,6 @@ describe('parseSpiceImport', () => {
           assert.equal(parsed.name, 'TUBE_1');
           for (const key of [...model.paramKeys, 'RGI', 'CCG', 'CGP', 'CCP']) {
             if (params[key] == null) continue;
-            if (id === 'ayumi' && type === 'triode' && key === 'RAD') continue;
             if (params[key] === 0 && parsed.params[key] == null) continue;
             assert.ok(parsed.params[key] != null, `${id} ${type} missing ${key}`);
             close(parsed.params[key], params[key]);

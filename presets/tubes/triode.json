@@ -1824,55 +1824,6 @@
     }
   },
   {
-    "id": "ayumi-12AX7",
-    "name": "12AX7",
-    "model": "ayumi",
-    "type": "triode",
-    "comment": "Ayumi-generic starter (tune to datasheet)",
-    "params": {
-      "G": 0.0012,
-      "MUC": 65,
-      "MUM": 100,
-      "ALPHA": 0.6,
-      "VCT": 0.6,
-      "GLIM": 0.0007,
-      "RAD": 0.4,
-      "RGI": 2000,
-      "CCG": 2.3,
-      "CGP": 2.4,
-      "CCP": 0.9
-    },
-    "sweep": {
-      "vgList": "0:-0.5:-4",
-      "vpMax": 400,
-      "ipMax": 0.0006
-    }
-  },
-  {
-    "id": "immler-12AX7",
-    "name": "12AX7",
-    "model": "immler",
-    "type": "triode",
-    "comment": "Immler-generic starter (tune to datasheet)",
-    "params": {
-      "MU": 100,
-      "XS": 1.4,
-      "KS": 1060,
-      "KP": 600,
-      "KB": 12,
-      "VCT": 0.2,
-      "RGI": 2000,
-      "CCG": 2.3,
-      "CGP": 2.4,
-      "CCP": 0.9
-    },
-    "sweep": {
-      "vgList": "0:-0.5:-4",
-      "vpMax": 400,
-      "ipMax": 0.0006
-    }
-  },
-  {
     "id": "ridge-12AX7",
     "name": "12AX7",
     "model": "ridge",

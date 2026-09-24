@@ -15,34 +15,17 @@ import {
 import { softplus } from '../lib/models/math.js';
 
 describe('model registry', () => {
-  it('lists koren, ayumi, immler, ridge', () => {
+  it('lists koren, karpov, duncan, ridge', () => {
     const ids = listModels().map((m) => m.id);
-    assert.deepEqual(ids, ['koren', 'karpov', 'duncan', 'ayumi', 'immler', 'ridge']);
+    assert.deepEqual(ids, ['koren', 'karpov', 'duncan', 'ridge']);
   });
 });
 
-describe('ayumi / immler plate current', () => {
-  for (const id of ['ayumi', 'immler']) {
-    it(`${id} triode conducts near 12AX7 region`, () => {
-      const p = getModel(id).defaults.triode;
-      const ip = plateCurrent(id, 'triode', -1, 250, 0, p);
-      assert.ok(ip > 0, `ip=${ip}`);
-    });
-
-    it(`${id} pentode rises with Ep`, () => {
-      const p = getModel(id).defaults.pentode;
-      const low = plateCurrent(id, 'pentode', 0, 20, 300, p);
-      const high = plateCurrent(id, 'pentode', 0, 300, 300, p);
-      assert.ok(high > low);
-    });
-  }
-
-  it('screen current is positive for koren/ayumi/immler pentodes', () => {
-    for (const id of ['koren', 'ayumi', 'immler']) {
-      const p = getModel(id).defaults.pentode;
-      const ig2 = screenCurrent(id, 'pentode', 0, 200, 300, p);
-      assert.ok(ig2 > 0, `${id} ig2=${ig2}`);
-    }
+describe('koren screen family', () => {
+  it('screen current is positive for a koren pentode', () => {
+    const p = getModel('koren').defaults.pentode;
+    const ig2 = screenCurrent('koren', 'pentode', 0, 200, 300, p);
+    assert.ok(ig2 > 0, `ig2=${ig2}`);
   });
 
   it('screenCurveFamily matches vg list / vp steps', () => {
@@ -65,26 +48,6 @@ describe('ayumi / immler plate current', () => {
 });
 
 describe('multi-model curveFamily / spice', () => {
-  it('exports ayumi and immler subckts', () => {
-    const ay = generateSubckt({
-      modelId: 'ayumi',
-      name: 'T',
-      type: 'triode',
-      params: getModel('ayumi').defaults.triode,
-    });
-    assert.match(ay, /Ayumi/);
-    assert.match(ay, /\.ENDS/);
-
-    const im = generateSubckt({
-      modelId: 'immler',
-      name: 'T',
-      type: 'pentode',
-      params: getModel('immler').defaults.pentode,
-    });
-    assert.match(im, /Immler/);
-    assert.match(im, /1 2 3 4/);
-  });
-
   it('exports a ridge pentode subckt with plate and screen sources', () => {
     const text = generateSubckt({
       modelId: 'ridge',

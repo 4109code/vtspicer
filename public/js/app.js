@@ -96,6 +96,12 @@ function applyAxisDefaults() {
   setIpMaxMa(defaultIpMaxMa(state.type));
 }
 
+/** Guide points are absolute currents. Shrinking Ip max (pentode 100 mA → triode 10 mA) would throw them above the plot. */
+function applyAxisDefaultsForModelChange() {
+  if (countGuidePoints(state.guides) > 0) return;
+  applyAxisDefaults();
+}
+
 function setIpMaxMa(ampsOrMa, { fromAmps = false } = {}) {
   const n = Number(ampsOrMa);
   if (!Number.isFinite(n)) return;
@@ -291,7 +297,7 @@ function switchModel(modelId, { resetParams = true } = {}) {
   $('modelNote').hidden = true;
   rebuildSliders();
   refreshPresetOptions();
-  if (!$('presetSelect').value) applyAxisDefaults();
+  if (!$('presetSelect').value) applyAxisDefaultsForModelChange();
   if (countGuidePoints(state.guides) >= 2) {
     runGuideFit();
   } else {
@@ -453,7 +459,7 @@ function bindUi() {
       ...defaultParams(state.modelId, state.type),
       ...state.params,
     });
-    if (!$('presetSelect').value) applyAxisDefaults();
+    if (!$('presetSelect').value) applyAxisDefaultsForModelChange();
     rebuildSliders();
     updateMultiVisibility();
     scheduleRedraw();

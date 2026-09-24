@@ -107,6 +107,37 @@
 
     <aside class="panel export">
       <section>
+        <h2>Load line</h2>
+        <label class="check"><input type="checkbox" id="showLoadLine" checked /> Show load line</label>
+        <div class="grid2">
+          <label>Rp (Ω) <input id="loadRp" type="number" value="100000" step="1000" /></label>
+          <label>Vp (V) <input id="loadVp" type="number" value="250" step="10" /></label>
+          <label id="loadVgRow">Vg (V) <input id="loadVg" type="number" value="-2" step="0.5" /></label>
+          <label id="loadVinRow">Vin peak (V) <input id="loadVin" type="number" value="1" step="0.1" /></label>
+          <label>Pmax (W) <input id="loadPmax" type="number" value="1" step="0.1" /></label>
+        </div>
+        <label class="check"><input type="checkbox" id="showPmax" checked /> Dissipation limit</label>
+        <label id="showIgRow" class="check"><input type="checkbox" id="showIg" /> Grid current</label>
+        <label id="igModeRow">Ig model
+          <select id="igMode">
+            <option value="diode" selected>Diode + RGI</option>
+            <option value="child">Child law</option>
+          </select>
+        </label>
+        <div id="childLawRow" class="grid2">
+          <label>VGOFF <input id="VGOFF" type="number" value="-0.6" step="0.1" /></label>
+          <label>IGA <input id="IGA" type="number" value="0.001" step="0.001" /></label>
+          <label>IGB <input id="IGB" type="number" value="0.3" step="0.1" /></label>
+          <label>IGC <input id="IGC" type="number" value="8" step="1" /></label>
+          <label>IGEX <input id="IGEX" type="number" value="2" step="0.1" /></label>
+        </div>
+        <label id="showSumRow" class="check"><input type="checkbox" id="showSum" /> Ip + Ig2</label>
+        <label id="ulRow" class="check"><input type="checkbox" id="ulOn" /> Ultralinear</label>
+        <label id="ulTapRow">UL tap <input id="ulTap" type="number" value="0.43" min="0" max="1" step="0.01" /></label>
+        <pre id="loadResults" class="load-results">—</pre>
+        <canvas id="harmPlot" width="280" height="110"></canvas>
+      </section>
+      <section>
         <h2>SPICE .SUBCKT</h2>
         <div class="row">
           <button type="button" id="btnCopy" class="primary">Copy</button>

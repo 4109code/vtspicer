@@ -35,6 +35,12 @@ export class Plot {
     this.screenCurves = [];
     this.showScreenCurves = true;
     this.screenCurveColor = '#1d4ed8';
+    this.positiveColor = '#7c3aed';
+    this.loadLine = null;
+    this.qPoint = null;
+    this.dissip = null;
+    this.igCurves = [];
+    this.sumCurves = [];
     this.guides = [];
     this.screenGuides = [];
     this.pad = { left: 64, right: 16, top: 16, bottom: 56 };
@@ -178,6 +184,10 @@ export class Plot {
     this.drawAxesLabels();
     this.drawCurves();
     this.drawScreenCurves();
+    this.drawSumCurves();
+    this.drawIgCurves();
+    this.drawDissipation();
+    this.drawLoadLine();
     this.drawGuides();
     this.drawCalibMarkers();
     this.drawCalibModeChrome();
@@ -297,11 +307,12 @@ export class Plot {
     const margin = 8;
     const font = '16px sans-serif';
     ctx.lineWidth = 1.75;
-    ctx.strokeStyle = this.curveColor;
 
     for (const curve of this.curves) {
       const pts = curve.points;
       if (!pts.length) continue;
+      const positive = curve.vg > 0;
+      ctx.strokeStyle = positive ? this.positiveColor : this.curveColor;
       this.strokePolyline(pts.map((pt) => this.dataToPx(pt.vp, pt.ip)));
 
       const label = `${curve.vg} V`;
@@ -331,7 +342,10 @@ export class Plot {
       }
 
       const labelPos = this.clampLabel(anchor.x + 5, anchor.y - 5, tw, th, margin);
-      this.drawLabel(label, labelPos.x, labelPos.y, { fill: this.curveColor, font });
+      this.drawLabel(label, labelPos.x, labelPos.y, {
+        fill: positive ? this.positiveColor : this.curveColor,
+        font,
+      });
     }
   }
 
@@ -362,6 +376,63 @@ export class Plot {
       const labelPos = this.clampLabel(anchor.x + 5, anchor.y - 5, tw, th, margin);
       this.drawLabel(label, labelPos.x, labelPos.y, { fill: color, font });
     }
+    ctx.restore();
+  }
+
+  drawSumCurves() {
+    if (!this.sumCurves?.length) return;
+    const ctx = this.ctx;
+    ctx.save();
+    ctx.strokeStyle = '#0f766e';
+    ctx.lineWidth = 1.25;
+    ctx.setLineDash([6, 3]);
+    for (const curve of this.sumCurves) {
+      if (!curve.points.length) continue;
+      this.strokePolyline(curve.points.map((pt) => this.dataToPx(pt.vp, pt.ip)));
+    }
+    ctx.restore();
+  }
+
+  drawIgCurves() {
+    if (!this.igCurves?.length) return;
+    const ctx = this.ctx;
+    ctx.save();
+    ctx.strokeStyle = '#b45309';
+    ctx.lineWidth = 1.25;
+    ctx.setLineDash([1, 3]);
+    for (const curve of this.igCurves) {
+      if (!curve.points.length) continue;
+      this.strokePolyline(curve.points.map((pt) => this.dataToPx(pt.vp, pt.ip)));
+    }
+    ctx.restore();
+  }
+
+  drawDissipation() {
+    if (!this.dissip?.length) return;
+    const ctx = this.ctx;
+    ctx.save();
+    ctx.strokeStyle = '#a16207';
+    ctx.lineWidth = 1.25;
+    this.strokePolyline(this.dissip.map((pt) => this.dataToPx(pt.vp, pt.ip)));
+    ctx.restore();
+  }
+
+  drawLoadLine() {
+    const ctx = this.ctx;
+    if (this.loadLine?.length) {
+      ctx.save();
+      ctx.strokeStyle = '#111';
+      ctx.lineWidth = 1.5;
+      this.strokePolyline(this.loadLine.map((pt) => this.dataToPx(pt.vp, pt.ip)));
+      ctx.restore();
+    }
+    if (!this.qPoint) return;
+    const p = this.dataToPx(this.qPoint.vp, this.qPoint.ip);
+    ctx.save();
+    ctx.fillStyle = '#111';
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, 3.5, 0, Math.PI * 2);
+    ctx.fill();
     ctx.restore();
   }
 

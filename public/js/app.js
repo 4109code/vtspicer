@@ -1,7 +1,7 @@
 import {
   parseVgList,
-  curveFamily,
-  screenCurveFamily,
+  plateCurrent,
+  screenCurrent,
   clampParams,
   getModel,
   defaultParams,
@@ -22,6 +22,14 @@ import {
   cloneGuides,
 } from './draw-guides.js';
 import { createParamSliders, readCaps, writeCaps, CAP_IDS } from './ui.js';
+import {
+  analyzeLoadLine,
+  dissipationCurrent,
+  screenVoltage,
+  vgAtCurrent,
+  smallSignal,
+} from '/lib/loadline.js';
+import { CHILD_DEFAULTS, childLawIg, gridCurrent } from '/lib/models/math.js';
 
 const STORAGE_KEY = 'koren-tube-modeler-v2';
 
@@ -157,8 +165,52 @@ function schedulePaint() {
   queueFrame();
 }
 
+function readLoadUi() {
+  const num = (id, fallback) => {
+    const n = Number($(id).value);
+    return Number.isFinite(n) ? n : fallback;
+  };
+  return {
+    show: $('showLoadLine').checked,
+    rp: Math.max(1, num('loadRp', 100000)),
+    vp: num('loadVp', 250),
+    vg: num('loadVg', -2),
+    vin: Math.max(0, num('loadVin', 1)),
+    pmax: Math.max(0, num('loadPmax', 1)),
+    showPmax: $('showPmax').checked,
+    showIg: $('showIg').checked,
+    gridLaw: $('igMode').value === 'child' ? 'child' : 'diode',
+    showSum: $('showSum').checked,
+    ulOn: $('ulOn').checked,
+    ul: Math.min(1, Math.max(0, num('ulTap', 0.43))),
+  };
+}
+
+function eg2For(vp, eg2, load) {
+  if (!isMultiGrid() || !load.ulOn) return eg2;
+  return screenVoltage(vp, eg2, load.ul, load.vp);
+}
+
+function sweepCurves(vgList, vpMax, vpSteps, eg2, load, currentFn) {
+  const steps = Math.max(2, vpSteps);
+  const curves = [];
+  for (const vg of vgList) {
+    const points = [];
+    for (let i = 0; i < steps; i++) {
+      const vp = (vpMax * i) / (steps - 1);
+      points.push({ vp, ip: currentFn(vg, vp, eg2For(vp, eg2, load)) });
+    }
+    curves.push({ vg, points });
+  }
+  return curves;
+}
+
 function redraw() {
-  const vgList = state.type === 'diode' ? [0] : parseVgList($('vgList').value);
+  const diode = state.type === 'diode';
+  const vgList = diode ? [0] : parseVgList($('vgList').value);
+  const load = readLoadUi();
+  if (state.modelId === 'koren') state.params.gridLaw = load.gridLaw;
+  else delete state.params.gridLaw;
 
   plot.calib.vpMax = Number($('vpMax').value) || 400;
   plot.calib.ipMax = readIpMaxA();
@@ -167,24 +219,151 @@ function redraw() {
 
   const eg2 = Number($('eg2').value) || 300;
   const vpSteps = Number($('vpSteps').value) || 120;
-  const sweepOpts = {
-    vgList,
-    vpMin: 0,
-    vpMax: plot.calib.vpMax,
-    vpSteps,
-    eg2,
-  };
+  const vpMax = plot.calib.vpMax;
+  const plateAt = (vg, vp, screen) =>
+    plateCurrent(state.modelId, state.type, vg, vp, screen, state.params);
 
-  plot.curves = curveFamily(state.modelId, state.type, state.params, sweepOpts);
+  plot.curves = sweepCurves(vgList, vpMax, vpSteps, eg2, load, plateAt);
   plot.showScreenCurves = isMultiGrid() && $('showScreenCurves').checked;
   plot.screenCurves = plot.showScreenCurves
-    ? screenCurveFamily(state.modelId, state.type, state.params, sweepOpts)
+    ? sweepCurves(vgList, vpMax, vpSteps, eg2, load, (vg, vp, screen) =>
+        screenCurrent(state.modelId, state.type, vg, vp, screen, state.params),
+      )
     : [];
+  plot.sumCurves =
+    isMultiGrid() && load.showSum
+      ? sweepCurves(vgList, vpMax, vpSteps, eg2, load, (vg, vp, screen) => {
+          return (
+            plateAt(vg, vp, screen) +
+            screenCurrent(state.modelId, state.type, vg, vp, screen, state.params)
+          );
+        })
+      : [];
+  plot.igCurves =
+    !diode && load.showIg
+      ? sweepCurves(vgList, vpMax, vpSteps, eg2, load, (vg, vp) => {
+          if (state.modelId === 'koren' && load.gridLaw === 'child') {
+            return childLawIg(vg, vp, state.params);
+          }
+          return gridCurrent(vg, state.params.RGI ?? 2000);
+        })
+      : [];
+  plot.dissip = load.showPmax
+    ? Array.from({ length: 80 }, (_, i) => {
+        const vp = (vpMax * (i + 1)) / 80;
+        return { vp, ip: dissipationCurrent(vp, load.pmax) };
+      })
+    : null;
+
+  const op = analyzeLoadLine({
+    ipAt: plateAt,
+    ig2At: isMultiGrid()
+      ? (vg, vp, screen) => screenCurrent(state.modelId, state.type, vg, vp, screen, state.params)
+      : null,
+    vg: diode ? 0 : load.vg,
+    vp: load.vp,
+    rp: load.rp,
+    vin: diode ? 0 : load.vin,
+    eg2,
+    ul: isMultiGrid() && load.ulOn ? load.ul : 0,
+    hasGrid: !diode,
+    ccgPf: state.params.CCG,
+    cgpPf: state.params.CGP,
+    vpHi: Math.max(vpMax, load.vp * 2, 1),
+  });
+  plot.loadLine = load.show && op.vc > 0
+    ? [
+        { vp: 0, ip: op.vc / load.rp },
+        { vp: op.vc, ip: 0 },
+      ]
+    : null;
+  plot.qPoint = load.show ? { vp: load.vp, ip: op.ip } : null;
   plot.guides = state.guides;
   plot.screenGuides = state.screenGuides;
   plot.draw();
   updateSpice();
+  updateLoadResults(op, load, diode);
+  drawHarmonics(op.sweep);
   updateDrawStatus();
+}
+
+function fmtOhm(r) {
+  if (r == null || !Number.isFinite(r)) return '—';
+  const a = Math.abs(r);
+  if (a >= 1e6) return `${(r / 1e6).toFixed(2)} MΩ`;
+  if (a >= 1e3) return `${(r / 1e3).toFixed(2)} kΩ`;
+  return `${r.toFixed(0)} Ω`;
+}
+
+function fmtFix(n, digits, suffix = '') {
+  if (n == null || !Number.isFinite(n)) return '—';
+  return `${n.toFixed(digits)}${suffix}`;
+}
+
+function updateLoadResults(op, load, diode) {
+  const ipMa = op.ip * 1000;
+  const lines = [
+    `Q  Vp ${fmtFix(load.vp, 1, ' V')}  Ip ${fmtFix(ipMa, 2, ' mA')}${diode ? '' : `  Vg ${fmtFix(load.vg, 2, ' V')}`}`,
+  ];
+  if (diode) {
+    lines.push(`ra ${fmtOhm(op.ra)}  Zout ${fmtOhm(op.zout)}`);
+  } else {
+    lines.push(
+      `Mu ${fmtFix(op.mu, 1)}  Gm ${fmtFix(op.gm == null ? null : op.gm * 1000, 2, ' mA/V')}  ra ${fmtOhm(op.ra)}`,
+    );
+    const rk = op.rk == null ? '' : `Rk ${fmtOhm(op.rk)}  `;
+    lines.push(`${rk}Pdiss ${fmtFix(op.plateDissipation, 2, ' W')}`);
+    lines.push(`Vc ${fmtFix(op.vc, 1, ' V')}  Zout ${fmtOhm(op.zout)}  Zin ${fmtOhm(op.zin)}`);
+  }
+  if (isMultiGrid()) {
+    lines.push(
+      `Ig2 ${fmtFix(op.ig2 * 1000, 2, ' mA')}  Pscreen ${fmtFix(op.screenDissipation, 2, ' W')}`,
+    );
+  }
+  if (!diode) {
+    lines.push(
+      `Pout ${fmtFix(op.pout, 3, ' W')}  THD ${fmtFix(op.thd, 2, '%')}`,
+    );
+    lines.push(
+      `H2 ${fmtFix(op.h2, 2)}  H3 ${fmtFix(op.h3, 2)}  H4 ${fmtFix(op.h4, 2)}  H5 ${fmtFix(op.h5, 2)} %`,
+    );
+  }
+  $('loadResults').textContent = lines.join('\n');
+}
+
+function drawHarmonics(sweep) {
+  const canvas = $('harmPlot');
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width;
+  const h = canvas.height;
+  ctx.clearRect(0, 0, w, h);
+  if (!sweep?.length || state.type === 'diode') return;
+  const series = [
+    { key: 'h2', color: '#d97757' },
+    { key: 'h3', color: '#7c3aed' },
+    { key: 'h4', color: '#0f766e' },
+    { key: 'h5', color: '#1d4ed8' },
+  ];
+  let max = 1;
+  for (const row of sweep) {
+    for (const s of series) max = Math.max(max, row[s.key] || 0);
+  }
+  const pad = 8;
+  ctx.font = '10px sans-serif';
+  series.forEach((s, n) => {
+    ctx.strokeStyle = s.color;
+    ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    sweep.forEach((row, i) => {
+      const x = pad + (i / (sweep.length - 1)) * (w - pad * 2);
+      const y = h - pad - ((row[s.key] || 0) / max) * (h - pad * 2);
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+    ctx.fillStyle = s.color;
+    ctx.fillText(s.key.toUpperCase(), 4 + n * 28, 12);
+  });
 }
 
 function updateSpice() {
@@ -298,6 +477,16 @@ function updateMultiVisibility() {
   $('capCGP').style.display = diode ? 'none' : '';
   $('capRGI').style.display = diode ? 'none' : '';
   $('capCCPLabel').textContent = diode ? 'CP (pF)' : 'CCP (pF)';
+  const koren = state.modelId === 'koren';
+  $('loadVgRow').style.display = diode ? 'none' : '';
+  $('loadVinRow').style.display = diode ? 'none' : '';
+  $('showIgRow').style.display = diode ? 'none' : '';
+  $('igModeRow').style.display = !diode && koren ? '' : 'none';
+  $('childLawRow').style.display = !diode && koren && $('igMode').value === 'child' ? '' : 'none';
+  $('showSumRow').style.display = multi ? '' : 'none';
+  $('ulRow').style.display = multi ? '' : 'none';
+  $('ulTapRow').style.display = multi && $('ulOn').checked ? '' : 'none';
+  $('harmPlot').style.display = diode ? 'none' : '';
   if (sliderApi) sliderApi.setMultiGrid(multi);
 }
 
@@ -422,6 +611,14 @@ function writePersist() {
       ipMax: $('ipMax').value,
       eg2: $('eg2').value,
       showScreenCurves: $('showScreenCurves').checked,
+      load: readLoadUi(),
+      child: {
+        VGOFF: Number($('VGOFF').value),
+        IGA: Number($('IGA').value),
+        IGB: Number($('IGB').value),
+        IGC: Number($('IGC').value),
+        IGEX: Number($('IGEX').value),
+      },
       guides: state.guides,
       screenGuides: state.screenGuides,
       calib: {
@@ -482,6 +679,31 @@ function restore() {
   if (typeof data.showScreenCurves === 'boolean') {
     $('showScreenCurves').checked = data.showScreenCurves;
   }
+  if (data.load) {
+    const map = {
+      show: 'showLoadLine',
+      showPmax: 'showPmax',
+      showIg: 'showIg',
+      showSum: 'showSum',
+      ulOn: 'ulOn',
+    };
+    for (const [key, id] of Object.entries(map)) {
+      if (typeof data.load[key] === 'boolean') $(id).checked = data.load[key];
+    }
+    const fields = { rp: 'loadRp', vp: 'loadVp', vg: 'loadVg', vin: 'loadVin', pmax: 'loadPmax', ul: 'ulTap' };
+    for (const [key, id] of Object.entries(fields)) {
+      if (Number.isFinite(data.load[key])) $(id).value = data.load[key];
+    }
+    if (data.load.gridLaw === 'child' || data.load.gridLaw === 'diode') {
+      $('igMode').value = data.load.gridLaw;
+    }
+  }
+  if (data.child) {
+    for (const key of ['VGOFF', 'IGA', 'IGB', 'IGC', 'IGEX']) {
+      if (Number.isFinite(data.child[key])) $(key).value = data.child[key];
+    }
+    Object.assign(state.params, data.child);
+  }
   if (data.calib) {
     Object.assign(plot.calib, data.calib);
     if (plot.isCalibrated()) {
@@ -531,8 +753,16 @@ function bindUi() {
     persist();
   });
 
-  for (const id of ['vgList', 'vpMax', 'ipMax', 'eg2', 'vpSteps', 'curveColor', 'imageOpacity']) {
+  for (const id of [
+    'vgList', 'vpMax', 'ipMax', 'eg2', 'vpSteps', 'curveColor', 'imageOpacity',
+    'loadRp', 'loadVp', 'loadVg', 'loadVin', 'loadPmax', 'ulTap',
+    'VGOFF', 'IGA', 'IGB', 'IGC', 'IGEX',
+  ]) {
     $(id).addEventListener('input', () => {
+      if (['VGOFF', 'IGA', 'IGB', 'IGC', 'IGEX'].includes(id)) {
+        const n = Number($(id).value);
+        if (Number.isFinite(n)) state.params[id] = n;
+      }
       scheduleRedraw();
       persist();
     });
@@ -542,6 +772,20 @@ function bindUi() {
     scheduleRedraw();
     persist();
   });
+
+  for (const id of ['showLoadLine', 'showPmax', 'showIg', 'showSum', 'ulOn', 'igMode']) {
+    $(id).addEventListener('change', () => {
+      if (id === 'igMode' && $('igMode').value === 'child') {
+        state.params = { ...CHILD_DEFAULTS, ...state.params, gridLaw: 'child' };
+        for (const key of Object.keys(CHILD_DEFAULTS)) {
+          $(key).value = state.params[key];
+        }
+      }
+      updateMultiVisibility();
+      scheduleRedraw();
+      persist();
+    });
+  }
 
   for (const id of CAP_IDS) {
     $(id).addEventListener('change', () => {
@@ -758,7 +1002,28 @@ function onPointerDown(evt) {
 function onPointerMove(evt) {
   const local = plot.eventToLocal(evt);
   const data = plot.pxToData(local.x, local.y);
-  $('cursorReadout').textContent = `Vp=${data.vp.toFixed(1)} V, Ip=${(data.ip * 1000).toFixed(3)} mA`;
+  let cursor = `Vp=${data.vp.toFixed(1)} V, Ip=${(data.ip * 1000).toFixed(3)} mA`;
+  if (state.type !== 'diode' && data.vp > 0 && data.ip >= 0) {
+    const load = readLoadUi();
+    const eg2 = Number($('eg2').value) || 300;
+    const screen = eg2For(data.vp, eg2, load);
+    const ipAt = (vg, vp, eg) => plateCurrent(state.modelId, state.type, vg, vp, eg, state.params);
+    const vg = vgAtCurrent(ipAt, data.vp, data.ip, screen);
+    if (vg != null) {
+      const ss = smallSignal({
+        ipAt,
+        vg,
+        vp: data.vp,
+        eg2: screen,
+        rp: load.rp,
+        hasGrid: true,
+        ccgPf: state.params.CCG,
+        cgpPf: state.params.CGP,
+      });
+      cursor += `  Vg=${vg.toFixed(2)} V  Mu=${ss.mu == null || !Number.isFinite(ss.mu) ? '—' : ss.mu.toFixed(1)}`;
+    }
+  }
+  $('cursorReadout').textContent = cursor;
 
   if (!drag) return;
 

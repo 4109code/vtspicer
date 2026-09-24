@@ -1,6 +1,12 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { curveFamily, fitToTargets, plateCurrent, getModel } from '../lib/tube.js';
+import {
+  curveFamily,
+  fitToTargets,
+  plateCurrent,
+  screenCurrent,
+  getModel,
+} from '../lib/tube.js';
 
 describe('fitToTargets', () => {
   it('recovers KG1 from a few synthetic guide points', () => {
@@ -77,5 +83,80 @@ describe('fitToTargets', () => {
       err1 += (plateCurrent('ayumi', 'triode', t.Eg, t.Ep, 0, fitted) - t.ip) ** 2;
     }
     assert.ok(err1 < err0 * 0.5, `err ${err0} -> ${err1}`);
+  });
+
+  it('recovers Koren KG2 from screen targets and leaves the plate scale alone', () => {
+    const truth = { ...getModel('koren').defaults.pentode, KG2: 8000 };
+    const start = { ...truth, KG2: 2200 };
+    const eg2 = 250;
+    const samples = [];
+    for (const eg of [0, -2, -4]) {
+      samples.push({
+        Eg: eg,
+        Ep: 200,
+        Eg2: eg2,
+        ip: screenCurrent('koren', 'pentode', eg, 200, eg2, truth),
+        kind: 'screen',
+      });
+    }
+    const fitted = fitToTargets('koren', 'pentode', start, samples, {
+      iterations: 80,
+      damping: 0.45,
+      keys: ['KG2'],
+    });
+    assert.ok(Math.abs(fitted.KG2 - 8000) / 8000 < 0.15, `KG2=${fitted.KG2}`);
+    assert.equal(fitted.KG1, start.KG1);
+    const ip0 = plateCurrent('koren', 'pentode', 0, 200, eg2, start);
+    const ip1 = plateCurrent('koren', 'pentode', 0, 200, eg2, fitted);
+    assert.ok(Math.abs(ip1 - ip0) < 1e-12);
+  });
+
+  it('moves ridge screen share toward the guides while plate targets hold Ip', () => {
+    const truth = { ...getModel('ridge').defaults.pentode, RS: 0.28 };
+    const start = { ...truth, RS: 0.08 };
+    const eg2 = 250;
+    const plate = [];
+    const screen = [];
+    for (const eg of [0, -2, -4]) {
+      for (const ep of [40, 120, 250]) {
+        plate.push({
+          Eg: eg,
+          Ep: ep,
+          Eg2: eg2,
+          ip: plateCurrent('ridge', 'pentode', eg, ep, eg2, truth),
+        });
+        screen.push({
+          Eg: eg,
+          Ep: ep,
+          Eg2: eg2,
+          ip: screenCurrent('ridge', 'pentode', eg, ep, eg2, truth),
+          kind: 'screen',
+        });
+      }
+    }
+    const plateScale = Math.max(...plate.map((t) => t.ip));
+    const screenScale = Math.max(...screen.map((t) => t.ip));
+    for (const t of screen) t.w = plateScale / screenScale;
+
+    function sse(params, rows) {
+      let err = 0;
+      for (const t of rows) {
+        const pred =
+          t.kind === 'screen'
+            ? screenCurrent('ridge', 'pentode', t.Eg, t.Ep, t.Eg2, params)
+            : plateCurrent('ridge', 'pentode', t.Eg, t.Ep, t.Eg2, params);
+        err += (pred - t.ip) ** 2;
+      }
+      return err;
+    }
+
+    const fitted = fitToTargets('ridge', 'pentode', start, [...plate, ...screen], {
+      iterations: 80,
+      damping: 0.45,
+      keys: ['RS', 'KG'],
+    });
+    assert.ok(Math.abs(fitted.RS - 0.28) < Math.abs(start.RS - 0.28), `RS=${fitted.RS}`);
+    assert.ok(sse(fitted, plate) < sse(start, plate));
+    assert.ok(sse(fitted, screen) < sse(start, screen) * 0.5);
   });
 });

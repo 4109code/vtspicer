@@ -18,7 +18,7 @@ import {
   undoGuidePoint,
   fitParamsToGuides,
   countGuidePoints,
-  hitGuidePoint,
+  hitGuideLayers,
   cloneGuides,
 } from './draw-guides.js';
 import { createParamSliders, readCaps, writeCaps, CAP_IDS } from './ui.js';
@@ -47,6 +47,7 @@ const state = {
   name: '12AX7',
   params: defaultParams('koren', 'triode'),
   guides: [],
+  screenGuides: [],
   presets: [],
 };
 
@@ -128,6 +129,7 @@ function queueFrame() {
     paintOnly = false;
     if (paint) {
       plot.guides = state.guides;
+      plot.screenGuides = state.screenGuides;
       plot.draw();
     } else {
       redraw();
@@ -170,6 +172,7 @@ function redraw() {
     ? screenCurveFamily(state.modelId, state.type, state.params, sweepOpts)
     : [];
   plot.guides = state.guides;
+  plot.screenGuides = state.screenGuides;
   plot.draw();
   updateSpice();
   updateDrawStatus();
@@ -209,17 +212,34 @@ function rebuildSliders() {
   updateMultiVisibility();
 }
 
+function guideLayer() {
+  if (!isMultiGrid()) return 'plate';
+  return $('guideLayerScreen')?.checked ? 'screen' : 'plate';
+}
+
+function guidePointCount() {
+  return countGuidePoints(state.guides) + countGuidePoints(state.screenGuides);
+}
+
 function updateDrawStatus(extra = '') {
   const el = $('drawStatus');
   if (!el) return;
-  const nCurves = state.guides.length;
-  const nPts = countGuidePoints(state.guides);
-  const base =
-    nPts === 0
-      ? state.type === 'diode'
+  const plateN = countGuidePoints(state.guides);
+  const screenN = countGuidePoints(state.screenGuides);
+  let base;
+  if (plateN + screenN === 0) {
+    base =
+      state.type === 'diode'
         ? 'Click the plot to place points along the anode curve, then Fit.'
-        : 'Click the plot to place a few points along each datasheet Vg curve. Change Active Vg for the next curve, then Fit.'
-      : `${nCurves} guide curve(s), ${nPts} point(s). Drag points to adjust.`;
+        : isMultiGrid()
+          ? 'Click the plot to place points. Plate follows Ip, Screen follows Ig2. Change Active Vg for the next curve, then Fit.'
+          : 'Click the plot to place a few points along each datasheet Vg curve. Change Active Vg for the next curve, then Fit.';
+  } else {
+    const parts = [];
+    if (plateN) parts.push(`plate ${state.guides.length} curve(s), ${plateN} pt`);
+    if (screenN) parts.push(`screen ${state.screenGuides.length} curve(s), ${screenN} pt`);
+    base = `${parts.join(' · ')}. Drag points to adjust.`;
+  }
   el.textContent = extra ? `${base} ${extra}` : base;
 }
 
@@ -232,22 +252,30 @@ function runGuideFit() {
     state.guides,
     eg2,
     (u, v) => plot.unitToData(u, v),
+    state.screenGuides,
   );
   if (!meta.ok) {
     updateDrawStatus(meta.reason || 'Need at least 2 guide points.');
     return;
   }
   setParams(params);
-  const rmsMa = (meta.rms * 1000).toFixed(3);
-  updateDrawStatus(`Fitted ${meta.points} points · RMS ${rmsMa} mA.`);
+  const bits = [`Fitted ${meta.points} points`];
+  if (meta.plateRms != null) bits.push(`plate RMS ${(meta.plateRms * 1000).toFixed(3)} mA`);
+  if (meta.screenRms != null) bits.push(`screen RMS ${(meta.screenRms * 1000).toFixed(3)} mA`);
+  if (meta.plateRms == null && meta.screenRms == null) {
+    bits.push(`RMS ${(meta.rms * 1000).toFixed(3)} mA`);
+  }
+  updateDrawStatus(`${bits.join(' · ')}.`);
 }
 
-function setGuides(guides, { fit = false } = {}) {
-  state.guides = guides;
-  plot.guides = guides;
+function setGuideLayer(layer, guides, { fit = false } = {}) {
+  if (layer === 'screen') state.screenGuides = guides;
+  else state.guides = guides;
+  plot.guides = state.guides;
+  plot.screenGuides = state.screenGuides;
   scheduleRedraw();
   persist();
-  if (fit && countGuidePoints(guides) >= 2 && $('drawAutoFit')?.checked) {
+  if (fit && guidePointCount() >= 2 && $('drawAutoFit')?.checked) {
     runGuideFit();
   } else {
     updateDrawStatus();
@@ -259,6 +287,8 @@ function updateMultiVisibility() {
   const diode = state.type === 'diode';
   $('eg2Row').style.display = multi ? '' : 'none';
   $('showScreenRow').style.display = multi ? '' : 'none';
+  $('guideLayerRow').style.display = multi ? '' : 'none';
+  if (!multi) $('guideLayerPlate').checked = true;
   $('vgRow').style.display = diode ? 'none' : '';
   $('capCCG').style.display = diode ? 'none' : '';
   $('capCGP').style.display = diode ? 'none' : '';
@@ -307,7 +337,7 @@ function switchModel(modelId, { resetParams = true } = {}) {
   rebuildSliders();
   refreshPresetOptions();
   if (!$('presetSelect').value) applyAxisDefaults();
-  if (countGuidePoints(state.guides) >= 2) {
+  if (guidePointCount() >= 2) {
     runGuideFit();
   } else {
     scheduleRedraw();
@@ -356,6 +386,7 @@ function resetToFormulaDefaults() {
   writeCaps(state.params);
   applyAxisDefaults();
   state.guides = [];
+  state.screenGuides = [];
   rebuildSliders();
   updateMultiVisibility();
   scheduleRedraw();
@@ -388,6 +419,7 @@ function writePersist() {
       eg2: $('eg2').value,
       showScreenCurves: $('showScreenCurves').checked,
       guides: state.guides,
+      screenGuides: state.screenGuides,
       calib: {
         origin: plot.calib.origin,
         vpMaxPx: plot.calib.vpMaxPx,
@@ -457,6 +489,17 @@ function restore() {
       state.guides = migrateGuides(data.guides, vpMax, ipMax);
       plot.guides = state.guides;
     }
+    if (Array.isArray(data.screenGuides)) {
+      const vpMax = plot.calib.vpScale > 0 ? plot.calib.vpScale : Number(data.vpMax) || 400;
+      const ipRaw = Number(data.ipMax);
+      const ipMax = plot.calib.ipScale > 0
+        ? plot.calib.ipScale
+        : ipRaw > 0 && ipRaw < 1
+          ? ipRaw
+          : (Number.isFinite(ipRaw) ? ipRaw / 1000 : 0.01);
+      state.screenGuides = migrateGuides(data.screenGuides, vpMax, ipMax);
+      plot.screenGuides = state.screenGuides;
+    }
   } catch {
     /* ignore */
   }
@@ -519,10 +562,12 @@ function bindUi() {
   $('btnFitGuides').addEventListener('click', () => runGuideFit());
   $('btnUndoGuide').addEventListener('click', () => {
     const vg = Number($('drawVg').value);
-    setGuides(undoGuidePoint(state.guides, Number.isFinite(vg) ? vg : null));
+    const layer = guideLayer();
+    const list = layer === 'screen' ? state.screenGuides : state.guides;
+    setGuideLayer(layer, undoGuidePoint(list, Number.isFinite(vg) ? vg : null));
   });
   $('btnClearGuides').addEventListener('click', () => {
-    setGuides([]);
+    setGuideLayer(guideLayer(), []);
   });
 
   $('btnCalibrate').addEventListener('click', () => {
@@ -536,7 +581,9 @@ function bindUi() {
       if (t instanceof HTMLInputElement || t instanceof HTMLTextAreaElement) return;
       e.preventDefault();
       const vg = Number($('drawVg').value);
-      setGuides(undoGuidePoint(state.guides, Number.isFinite(vg) ? vg : null));
+      const layer = guideLayer();
+      const list = layer === 'screen' ? state.screenGuides : state.guides;
+      setGuideLayer(layer, undoGuidePoint(list, Number.isFinite(vg) ? vg : null));
     }
   });
   $('btnClearImage').addEventListener('click', () => {
@@ -685,10 +732,9 @@ function onClick(evt) {
   const unit = plot.pxToUnit(local.x, local.y);
   const vg = Number($('drawVg').value);
   if (!Number.isFinite(vg)) return;
-  setGuides(
-    addGuidePoint(state.guides, vg, unit.u, Math.max(0, unit.v)),
-    { fit: true },
-  );
+  const layer = guideLayer();
+  const list = layer === 'screen' ? state.screenGuides : state.guides;
+  setGuideLayer(layer, addGuidePoint(list, vg, unit.u, Math.max(0, unit.v)), { fit: true });
 }
 
 function onPointerDown(evt) {
@@ -696,10 +742,20 @@ function onPointerDown(evt) {
   const local = plot.eventToLocal(evt);
   canvas.setPointerCapture(evt.pointerId);
 
-  const hit = hitGuidePoint(plot, state.guides, local.x, local.y, 12);
+  const hit = hitGuideLayers(
+    plot,
+    [
+      { id: 'plate', guides: state.guides },
+      { id: 'screen', guides: state.screenGuides },
+    ],
+    local.x,
+    local.y,
+    12,
+  );
   if (hit) {
     skipDrawClick = true;
     drag = {
+      layer: hit.layer,
       gi: hit.gi,
       pi: hit.pi,
       moved: false,
@@ -718,7 +774,8 @@ function onPointerMove(evt) {
 
   drag.moved = true;
   const unit = plot.pxToUnit(local.x, local.y);
-  const guides = cloneGuides(state.guides);
+  const source = drag.layer === 'screen' ? state.screenGuides : state.guides;
+  const guides = cloneGuides(source);
   const curve = guides[drag.gi];
   if (!curve) return;
   curve.points[drag.pi] = { u: unit.u, v: Math.max(0, unit.v) };
@@ -733,16 +790,22 @@ function onPointerMove(evt) {
     }
   });
   drag.pi = bestPi;
-  state.guides = guides;
-  plot.guides = guides;
+  if (drag.layer === 'screen') state.screenGuides = guides;
+  else state.guides = guides;
+  plot.guides = state.guides;
+  plot.screenGuides = state.screenGuides;
   schedulePaint();
 }
 
 function onPointerUp() {
   if (!drag) return;
   const moved = drag.moved;
+  const layer = drag.layer;
   drag = null;
-  if (moved) setGuides(state.guides, { fit: true });
+  if (moved) {
+    const guides = layer === 'screen' ? state.screenGuides : state.guides;
+    setGuideLayer(layer, guides, { fit: true });
+  }
   flushPersist();
 }
 

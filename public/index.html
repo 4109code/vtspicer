@@ -81,6 +81,10 @@
       <section>
         <h2>Vg guides</h2>
         <div id="drawControls" class="draw-controls">
+          <div id="guideLayerRow" class="row">
+            <label class="check"><input type="radio" name="guideLayer" id="guideLayerPlate" value="plate" checked /> Plate (Ip)</label>
+            <label class="check"><input type="radio" name="guideLayer" id="guideLayerScreen" value="screen" /> Screen (Ig2)</label>
+          </div>
           <label>Active Vg (V) <input id="drawVg" type="number" value="0" step="0.5" /></label>
           <label class="check"><input type="checkbox" id="drawAutoFit" checked /> Auto-fit after each point</label>
           <div class="row">
@@ -88,7 +92,7 @@
             <button type="button" id="btnUndoGuide">Undo point</button>
             <button type="button" id="btnClearGuides">Clear guides</button>
           </div>
-          <p id="drawStatus" class="hint">Click the plot to place a few points along each datasheet Vg curve. Change
+          <p id="drawStatus" class="hint">Click the plot to place a few points along each datasheet Vg curve. On a pentode, Plate follows Ip and Screen follows Ig2. Change
             Active Vg for the next curve, then Fit.</p>
         </div>
       </section>

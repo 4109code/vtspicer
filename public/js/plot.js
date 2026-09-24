@@ -32,6 +32,7 @@ export class Plot {
     this.showScreenCurves = true;
     this.screenCurveColor = '#1d4ed8';
     this.guides = [];
+    this.screenGuides = [];
     this.pad = { left: 64, right: 16, top: 16, bottom: 56 };
     /** @type {{ step: number, message: string }|null} */
     this.calibMode = null;
@@ -387,28 +388,25 @@ export class Plot {
     ctx.restore();
   }
 
-  drawGuides() {
-    if (!this.guides?.length) return;
+  drawGuideSet(guides, style) {
+    if (!guides?.length) return;
     const ctx = this.ctx;
-    const stroke = '#0284c7';
-    const fill = '#38bdf8';
-
-    for (const g of this.guides) {
+    for (const g of guides) {
       const pts = g.points || [];
       if (!pts.length) continue;
       const px = pts.map((pt) => this.unitToPx(pt.u, pt.v));
 
       ctx.save();
       ctx.setLineDash([7, 5]);
-      ctx.strokeStyle = stroke;
+      ctx.strokeStyle = style.stroke;
       ctx.lineWidth = 2.25;
       this.strokePolyline(px);
       ctx.setLineDash([]);
 
       for (const p of px) {
         ctx.beginPath();
-        ctx.fillStyle = fill;
-        ctx.strokeStyle = '#0c4a6e';
+        ctx.fillStyle = style.fill;
+        ctx.strokeStyle = style.ring;
         ctx.lineWidth = 2;
         ctx.arc(p.x, p.y, 6, 0, Math.PI * 2);
         ctx.fill();
@@ -416,12 +414,29 @@ export class Plot {
       }
 
       const anchor = px[Math.min(px.length - 1, Math.floor(px.length * 0.6))];
-      this.drawLabel(`${g.vg} V`, anchor.x + 8, anchor.y - 10, {
-        fill: '#0369a1',
+      this.drawLabel(style.label(g), anchor.x + 8, anchor.y - 10, {
+        fill: style.labelFill,
         font: '15px sans-serif',
       });
       ctx.restore();
     }
+  }
+
+  drawGuides() {
+    this.drawGuideSet(this.guides, {
+      stroke: '#0284c7',
+      fill: '#38bdf8',
+      ring: '#0c4a6e',
+      labelFill: '#0369a1',
+      label: (g) => `${g.vg} V`,
+    });
+    this.drawGuideSet(this.screenGuides, {
+      stroke: '#c2410c',
+      fill: '#fb923c',
+      ring: '#7c2d12',
+      labelFill: '#9a3412',
+      label: (g) => `${g.vg} Ig2`,
+    });
   }
 
   drawCalibMarkers() {

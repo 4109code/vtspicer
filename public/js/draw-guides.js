@@ -1,8 +1,9 @@
 /**
  * Drawn Vg guide polylines → multi-point parameter fit.
+ * Plate guides match Ip. Screen guides match Ig2.
  */
 
-import { fitToTargets, plateCurrent } from '/lib/tube.js';
+import { fitToTargets, getModel, plateCurrent, screenCurrent } from '/lib/tube.js';
 
 /**
  * @typedef {{ vg: number, points: { u: number, v: number }[] }} GuideCurve
@@ -12,7 +13,7 @@ export function countGuidePoints(guides) {
   return (guides || []).reduce((n, g) => n + (g.points?.length || 0), 0);
 }
 
-function guidesToTargets(guides, eg2, toData) {
+function guidesToTargets(guides, eg2, toData, kind) {
   const targets = [];
   for (const g of guides || []) {
     for (const pt of g.points || []) {
@@ -22,32 +23,111 @@ function guidesToTargets(guides, eg2, toData) {
         Ep: Math.max(0, data.vp),
         Eg2: eg2,
         ip: Math.max(0, data.ip),
+        kind,
       });
     }
   }
   return targets;
 }
 
-export function fitParamsToGuides(modelId, type, params, guides, eg2 = 0, toData) {
-  const targets = guidesToTargets(guides, eg2, toData);
-  if (targets.length < 2) {
-    return { params, meta: { ok: false, reason: 'need ≥2 points' } };
+function peakOf(targets) {
+  let peak = 0;
+  for (const t of targets) {
+    if (Number.isFinite(t.ip) && t.ip > peak) peak = t.ip;
   }
-  const next = fitToTargets(modelId, type, params, targets, {
-    iterations: 90,
-    damping: 0.45,
-  });
+  return Math.max(peak, 1e-9);
+}
+
+/** Samples of the plate family this fit started from, so a screen-only fit cannot walk Ip off. */
+function plateHoldTargets(modelId, type, params, screenTargets) {
+  const eg2 = screenTargets[0]?.Eg2 ?? 0;
+  const hi = Math.max(1, ...screenTargets.map((t) => t.Ep));
+  const egs = [...new Set(screenTargets.map((t) => t.Eg))];
+  const rows = [];
+  for (const eg of egs) {
+    for (const f of [0.3, 0.6, 0.9]) {
+      const ep = hi * f;
+      rows.push({
+        Eg: eg,
+        Ep: ep,
+        Eg2: eg2,
+        ip: plateCurrent(modelId, type, eg, ep, eg2, params),
+        kind: 'plate',
+      });
+    }
+  }
+  return rows;
+}
+
+function fitKeys(modelId, type, hasPlate, hasScreen) {
+  const model = getModel(modelId);
+  const plateKeys = model.inverseKeys?.[type] || model.inverseKeys?.triode || model.paramKeys || [];
+  const screenKeys = model.screenKeys?.[type] || [];
+  if (hasPlate && hasScreen) return [...new Set([...plateKeys, ...screenKeys])];
+  if (hasScreen) return screenKeys;
+  return null;
+}
+
+function rms(modelId, type, params, targets) {
+  if (!targets.length) return null;
   let err = 0;
   for (const t of targets) {
-    const ip = plateCurrent(modelId, type, t.Eg, t.Ep, t.Eg2, next);
-    err += (ip - t.ip) ** 2;
+    const pred =
+      t.kind === 'screen'
+        ? screenCurrent(modelId, type, t.Eg, t.Ep, t.Eg2, params)
+        : plateCurrent(modelId, type, t.Eg, t.Ep, t.Eg2, params);
+    err += (pred - t.ip) ** 2;
   }
+  return Math.sqrt(err / targets.length);
+}
+
+export function fitParamsToGuides(
+  modelId,
+  type,
+  params,
+  guides,
+  eg2 = 0,
+  toData,
+  screenGuides = [],
+) {
+  const plate = guidesToTargets(guides, eg2, toData, 'plate');
+  const screen = guidesToTargets(screenGuides, eg2, toData, 'screen');
+  if (plate.length + screen.length < 2) {
+    return { params, meta: { ok: false, reason: 'need ≥2 points' } };
+  }
+
+  const plateScale = peakOf(plate);
+  const screenScale = peakOf(screen);
+  if (plate.length && screen.length) {
+    const w = plateScale / screenScale;
+    for (const t of screen) t.w = w;
+  }
+
+  let holds = [];
+  if (!plate.length && screen.length) {
+    holds = plateHoldTargets(modelId, type, params, screen);
+    const holdW = 0.35 * (screenScale / peakOf(holds));
+    for (const t of holds) t.w = holdW;
+  }
+
+  const keys = fitKeys(modelId, type, plate.length > 0, screen.length > 0);
+  if (screen.length && !plate.length && !keys?.length) {
+    return { params, meta: { ok: false, reason: 'this formula has no screen parameters' } };
+  }
+
+  const next = fitToTargets(modelId, type, params, [...plate, ...screen, ...holds], {
+    iterations: 90,
+    damping: 0.45,
+    keys,
+  });
   return {
     params: next,
     meta: {
       ok: true,
-      points: targets.length,
-      rms: Math.sqrt(err / targets.length),
+      points: plate.length + screen.length,
+      rms: rms(modelId, type, next, plate.length ? plate : screen),
+      plateRms: rms(modelId, type, next, plate),
+      screenRms: rms(modelId, type, next, screen),
     },
   };
 }
@@ -98,9 +178,19 @@ export function hitGuidePoint(plot, guides, x, y, radius = 10) {
       const d = (p.x - x) ** 2 + (p.y - y) ** 2;
       if (d <= bestD) {
         bestD = d;
-        best = { gi, pi, ...p, vg: g.vg };
+        best = { gi, pi, ...p, vg: g.vg, d };
       }
     });
   });
+  return best;
+}
+
+export function hitGuideLayers(plot, layers, x, y, radius = 12) {
+  let best = null;
+  for (const layer of layers) {
+    const hit = hitGuidePoint(plot, layer.guides, x, y, radius);
+    if (!hit) continue;
+    if (!best || hit.d < best.d) best = { ...hit, layer: layer.id };
+  }
   return best;
 }

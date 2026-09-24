@@ -1,6 +1,6 @@
 # VTSpicer: Vacuum tube modeling
 
-Match plate curves with equations and export a SPICE .SUBCKT
+Match plate curves, set a load line, and export a SPICE .SUBCKT
 
 ## How to use
 
@@ -9,6 +9,16 @@ Match plate curves with equations and export a SPICE .SUBCKT
 3. Calibrate the graph over the image axes
 3. Adjust parameters with sliders, or click **Vg guides** on the plot: place a few points along each datasheet Vg curve for automatic fitting
 4. Copy or download the generated `.lib` / `.SUBCKT`
+
+## Load line
+
+Drag the center dot to move the quiescent point, or an open dot to set Vin and tilt Rp. **Pmax** draws `Ip = Pmax / Vp`.
+
+**Best Q-point** picks the most output power at or below **Acceptable THD** (default 1%), with plate heat within Pmax and both swing peaks inside the axes.
+
+Power is `Vpp·Ipp/8`. The readout groups bias and heat, Gm / Ra / Mu / Zout / Zin, the swing (Vin rms, Vout peak-to-peak, Vout rms, Iout rms, power, efficiency), then THD and H2–H5.
+
+Grid current uses the diode plus RGI, or Koren's child law. Pentodes can show Ip+Ig2, an ultralinear screen tap, and on Koren a KVC screen knee.
 
 ## Equations
 

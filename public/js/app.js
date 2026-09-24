@@ -26,6 +26,7 @@ import {
   analyzeLoadLine,
   dissipationCurrent,
   screenVoltage,
+  swingSamples,
   vgAtCurrent,
   smallSignal,
 } from '/lib/loadline.js';
@@ -72,6 +73,7 @@ let paintOnly = false;
 let persistTimer = 0;
 let drag = null;
 let skipDrawClick = false;
+let loadPlaced = false;
 
 function $(id) {
   return document.getElementById(id);
@@ -102,6 +104,7 @@ function readIpMaxA() {
 function applyAxisDefaults() {
   $('vpMax').value = 400;
   setIpMaxMa(defaultIpMaxMa(state.type));
+  centerLoadLine();
 }
 
 /** Turn saved {vp, ip} points into axis fractions using the scale they were stored against. */
@@ -184,6 +187,167 @@ function readLoadUi() {
     ulOn: $('ulOn').checked,
     ul: Math.min(1, Math.max(0, num('ulTap', 0.43))),
   };
+}
+
+function plateAt(vg, vp, screen) {
+  return plateCurrent(state.modelId, state.type, vg, vp, screen, state.params);
+}
+
+/** Line through the middle of the plot, with the quiescent point on a curve that conducts. */
+function centerLoadLine() {
+  const vpMax = Number($('vpMax').value) || 400;
+  const ipMax = readIpMaxA();
+  if (!(vpMax > 0) || !(ipMax > 0)) return;
+  const midVp = vpMax / 2;
+  const midIp = ipMax / 2;
+  if (state.type === 'diode') {
+    $('loadVg').value = '0';
+    $('loadVin').value = '0';
+    $('loadVp').value = String(Math.round(midVp));
+    $('loadRp').value = String(Math.max(1, Math.round(vpMax / ipMax)));
+    return;
+  }
+  const eg2 = Number($('eg2').value) || 300;
+  const listed = parseVgList($('vgList').value);
+  const vg = listed.length ? Math.max(...listed) : 0;
+  $('loadVg').value = String(vg);
+  const screenAt = (vp) => eg2For(vp, eg2, readLoadUi());
+  const atMid = plateAt(vg, midVp, screenAt(midVp));
+  let vp = midVp;
+  let ip = atMid;
+  let rp = vpMax / ipMax;
+  if (atMid < midIp * 0.8) {
+    vp = vpMax * 0.72;
+    ip = plateAt(vg, vp, screenAt(vp));
+    const den = midIp - ip;
+    rp = Math.abs(den) > midIp * 0.05 ? (vp - midVp) / den : rp;
+  } else if (atMid > midIp * 1.2) {
+    const solved = vgAtCurrent(plateAt, midVp, midIp, screenAt(midVp));
+    if (solved != null) $('loadVg').value = solved.toFixed(2);
+    ip = midIp;
+  }
+  $('loadVp').value = String(Math.round(vp));
+  $('loadRp').value = String(Math.max(1, Math.round(Math.abs(rp))));
+  $('loadVin').value = visibleVin(vp, ip, eg2).toFixed(2);
+}
+
+function visibleVin(vp, ip, eg2) {
+  const load = readLoadUi();
+  const vpMax = Number($('vpMax').value) || 400;
+  let chosen = 2;
+  for (const vin of [1, 2, 5, 8, 12]) {
+    const samples = swingSamples(plateAt, {
+      vg: load.vg,
+      vin,
+      vq: vp,
+      iq: ip,
+      rp: load.rp,
+      eg2,
+      ul: isMultiGrid() && load.ulOn ? load.ul : 0,
+      vpLo: 0,
+      vpHi: Math.max(vpMax * 2, 1),
+    });
+    const a = samples[0];
+    const b = samples[6];
+    if (a?.vp == null || b?.vp == null) continue;
+    chosen = vin;
+    if (Math.abs(b.vp - a.vp) >= vpMax * 0.15) return vin;
+  }
+  return chosen;
+}
+
+function loadPointOnPlot() {
+  const vpMax = Number($('vpMax').value) || 400;
+  const ipMax = readIpMaxA();
+  const load = readLoadUi();
+  if (!(load.vp > vpMax * 0.04 && load.vp < vpMax * 0.96)) return false;
+  const eg2 = Number($('eg2').value) || 300;
+  const ip = plateAt(state.type === 'diode' ? 0 : load.vg, load.vp, eg2For(load.vp, eg2, load));
+  return ip > ipMax * 0.04 && ip < ipMax * 0.96;
+}
+
+function placeLoadCenter(vp, ip) {
+  $('loadVp').value = vp.toFixed(1);
+  if (state.type === 'diode') return;
+  const eg2 = Number($('eg2').value) || 300;
+  const screen = eg2For(vp, eg2, readLoadUi());
+  let target = Math.max(0, ip);
+  let vg = vgAtCurrent(plateAt, vp, target, screen);
+  if (vg == null) {
+    const lo = plateAt(-200, vp, screen);
+    const hi = plateAt(40, vp, screen);
+    target = Math.min(Math.max(target, Math.min(lo, hi)), Math.max(lo, hi));
+    vg = vgAtCurrent(plateAt, vp, target, screen);
+  }
+  if (vg != null) $('loadVg').value = vg.toFixed(2);
+}
+
+function vinFromPoint(vp, ip) {
+  const load = readLoadUi();
+  const eg2 = Number($('eg2').value) || 300;
+  const screen = eg2For(vp, eg2, load);
+  const vg = vgAtCurrent(plateAt, vp, Math.max(0, ip), screen);
+  if (vg == null) return null;
+  return Math.abs(vg - load.vg);
+}
+
+/** Pivot the line around the quiescent point so it passes through this plate point. */
+function tiltLoadLine(vp, ip) {
+  const load = readLoadUi();
+  const eg2 = Number($('eg2').value) || 300;
+  const iq = plateAt(state.type === 'diode' ? 0 : load.vg, load.vp, eg2For(load.vp, eg2, load));
+  const den = ip - iq;
+  const num = load.vp - vp;
+  if (Math.abs(num) < 1 || Math.abs(den) < 1e-7) return;
+  const rp = num / den;
+  if (!(rp > 50)) return;
+  $('loadRp').value = String(Math.round(rp));
+}
+
+/** Keep a swing end on the visible load line when the curve meeting is off the plot. */
+function swingMarker(sample, side, load, iq, vpMax, ipMax) {
+  const onPlot =
+    sample &&
+    sample.vp != null &&
+    sample.ip != null &&
+    sample.vp >= 0 &&
+    sample.vp <= vpMax &&
+    sample.ip >= 0 &&
+    sample.ip <= ipMax;
+  if (onPlot) return { vp: sample.vp, ip: sample.ip };
+  const rp = load.rp;
+  const vq = load.vp;
+  if (!(rp > 0) || !Number.isFinite(iq)) return null;
+  if (side === 'high') {
+    const vpTop = vq - rp * (ipMax - iq);
+    if (vpTop >= 0 && vpTop <= vpMax) return { vp: vpTop, ip: ipMax };
+    return { vp: 0, ip: Math.min(ipMax, Math.max(0, iq + vq / rp)) };
+  }
+  const ipRight = iq + (vq - vpMax) / rp;
+  if (ipRight >= 0 && ipRight <= ipMax) return { vp: vpMax, ip: ipRight };
+  const vc = vq + rp * iq;
+  return { vp: Math.min(vpMax, Math.max(0, vc)), ip: 0 };
+}
+
+function hitLoadHandle(local) {
+  if (!$('showLoadLine').checked) return null;
+  const reach = 16 * 16;
+  let best = null;
+  let bestD = reach;
+  const consider = (kind, pt) => {
+    if (!pt || pt.vp == null || pt.ip == null) return;
+    const p = plot.dataToPx(pt.vp, pt.ip);
+    const d = (p.x - local.x) ** 2 + (p.y - local.y) ** 2;
+    if (d <= bestD) {
+      bestD = d;
+      best = kind;
+    }
+  };
+  if (state.type !== 'diode') {
+    for (const pt of plot.swingPoints || []) consider('vin', pt);
+  }
+  consider('center', plot.qPoint);
+  return best;
 }
 
 function eg2For(vp, eg2, load) {
@@ -269,7 +433,7 @@ function redraw() {
     hasGrid: !diode,
     ccgPf: state.params.CCG,
     cgpPf: state.params.CGP,
-    vpHi: Math.max(vpMax, load.vp * 2, 1),
+    vpHi: Math.max(vpMax * 5, load.vp * 4, 2000),
   });
   plot.loadLine = load.show && op.vc > 0
     ? [
@@ -278,6 +442,11 @@ function redraw() {
       ]
     : null;
   plot.qPoint = load.show ? { vp: load.vp, ip: op.ip } : null;
+  const ipMax = plot.calib.ipMax;
+  const ends = load.show && !diode && load.vin > 0 ? [op.samples?.[0], op.samples?.[6]] : [];
+  plot.swingPoints = ends
+    .map((pt, i) => swingMarker(pt, i === 0 ? 'low' : 'high', load, op.ip, vpMax, ipMax))
+    .filter((pt) => pt && pt.vp != null && pt.ip != null);
   plot.guides = state.guides;
   plot.screenGuides = state.screenGuides;
   plot.draw();
@@ -300,35 +469,60 @@ function fmtFix(n, digits, suffix = '') {
   return `${n.toFixed(digits)}${suffix}`;
 }
 
+function loadMetric(key, value, hint) {
+  const row = document.createElement('div');
+  row.className = 'load-metric';
+  const name = document.createElement('span');
+  name.className = 'param-key';
+  name.textContent = key;
+  const val = document.createElement('span');
+  val.className = 'load-value';
+  val.textContent = value;
+  const note = document.createElement('span');
+  note.className = 'param-hint';
+  note.textContent = hint;
+  row.append(name, val, note);
+  return row;
+}
+
 function updateLoadResults(op, load, diode) {
-  const ipMa = op.ip * 1000;
-  const lines = [
-    `Q  Vp ${fmtFix(load.vp, 1, ' V')}  Ip ${fmtFix(ipMa, 2, ' mA')}${diode ? '' : `  Vg ${fmtFix(load.vg, 2, ' V')}`}`,
+  const box = $('loadResults');
+  const rows = [
+    loadMetric(
+      'Point',
+      diode
+        ? `${fmtFix(load.vp, 1, ' V')}, ${fmtFix(op.ip * 1000, 2, ' mA')}`
+        : `${fmtFix(load.vp, 1, ' V')}, ${fmtFix(op.ip * 1000, 2, ' mA')}, Vg ${fmtFix(load.vg, 2, ' V')}`,
+      'Quiescent point on the load line',
+    ),
   ];
   if (diode) {
-    lines.push(`ra ${fmtOhm(op.ra)}  Zout ${fmtOhm(op.zout)}`);
+    rows.push(loadMetric('ra', fmtOhm(op.ra), 'Plate resistance. How Ip moves with Vp'));
+    rows.push(loadMetric('Zout', fmtOhm(op.zout), 'Rp in parallel with ra'));
   } else {
-    lines.push(
-      `Mu ${fmtFix(op.mu, 1)}  Gm ${fmtFix(op.gm == null ? null : op.gm * 1000, 2, ' mA/V')}  ra ${fmtOhm(op.ra)}`,
-    );
-    const rk = op.rk == null ? '' : `Rk ${fmtOhm(op.rk)}  `;
-    lines.push(`${rk}Pdiss ${fmtFix(op.plateDissipation, 2, ' W')}`);
-    lines.push(`Vc ${fmtFix(op.vc, 1, ' V')}  Zout ${fmtOhm(op.zout)}  Zin ${fmtOhm(op.zin)}`);
+    rows.push(loadMetric('Mu', fmtFix(op.mu, 1), 'Gain. Gm times ra'));
+    rows.push(loadMetric('Gm', fmtFix(op.gm == null ? null : op.gm * 1000, 2, ' mA/V'), 'How Ip moves with Vg'));
+    rows.push(loadMetric('ra', fmtOhm(op.ra), 'Plate resistance. How Ip moves with Vp'));
+    if (op.rk != null) rows.push(loadMetric('Rk', fmtOhm(op.rk), 'Cathode resistor for this Vg and Ip'));
+    rows.push(loadMetric('Pdiss', fmtFix(op.plateDissipation, 2, ' W'), 'Plate heat. Vp times Ip'));
+    rows.push(loadMetric('Vc', fmtFix(op.vc, 1, ' V'), 'Supply the load line implies'));
+    rows.push(loadMetric('Zout', fmtOhm(op.zout), 'Rp in parallel with ra'));
+    rows.push(loadMetric('Zin', fmtOhm(op.zin), 'Grid impedance at 10 kHz'));
   }
   if (isMultiGrid()) {
-    lines.push(
-      `Ig2 ${fmtFix(op.ig2 * 1000, 2, ' mA')}  Pscreen ${fmtFix(op.screenDissipation, 2, ' W')}`,
-    );
+    rows.push(loadMetric('Ig2', fmtFix(op.ig2 * 1000, 2, ' mA'), 'Screen current at this point'));
+    rows.push(loadMetric('Ps', fmtFix(op.screenDissipation, 2, ' W'), 'Screen heat. Vg2 times Ig2'));
   }
   if (!diode) {
-    lines.push(
-      `Pout ${fmtFix(op.pout, 3, ' W')}  THD ${fmtFix(op.thd, 2, '%')}`,
-    );
-    lines.push(
-      `H2 ${fmtFix(op.h2, 2)}  H3 ${fmtFix(op.h3, 2)}  H4 ${fmtFix(op.h4, 2)}  H5 ${fmtFix(op.h5, 2)} %`,
-    );
+    rows.push(loadMetric('Pout', fmtFix(op.pout, 3, ' W'), 'Power into Rp at this Vin'));
+    rows.push(loadMetric('THD', fmtFix(op.thd, 2, '%'), 'H2 through H5, combined'));
+    rows.push(loadMetric('H2', fmtFix(op.h2, 2, '%'), 'Second harmonic'));
+    rows.push(loadMetric('H3', fmtFix(op.h3, 2, '%'), 'Third harmonic'));
+    rows.push(loadMetric('H4', fmtFix(op.h4, 2, '%'), 'Fourth harmonic'));
+    rows.push(loadMetric('H5', fmtFix(op.h5, 2, '%'), 'Fifth harmonic'));
   }
-  $('loadResults').textContent = lines.join('\n');
+  box.replaceChildren(...rows);
+  $('harmHint').style.display = diode ? 'none' : '';
 }
 
 function drawHarmonics(sweep) {
@@ -568,6 +762,9 @@ function applyPreset(preset) {
   setParams(state.params);
   updateMultiVisibility();
   refreshPresetOptions();
+  centerLoadLine();
+  scheduleRedraw();
+  persist();
 }
 
 function resetToFormulaDefaults() {
@@ -611,7 +808,7 @@ function writePersist() {
       ipMax: $('ipMax').value,
       eg2: $('eg2').value,
       showScreenCurves: $('showScreenCurves').checked,
-      load: readLoadUi(),
+      load: { ...readLoadUi(), userPlaced: loadPlaced },
       child: {
         VGOFF: Number($('VGOFF').value),
         IGA: Number($('IGA').value),
@@ -697,6 +894,7 @@ function restore() {
     if (data.load.gridLaw === 'child' || data.load.gridLaw === 'diode') {
       $('igMode').value = data.load.gridLaw;
     }
+    loadPlaced = data.load.userPlaced === true;
   }
   if (data.child) {
     for (const key of ['VGOFF', 'IGA', 'IGB', 'IGC', 'IGEX']) {
@@ -763,6 +961,8 @@ function bindUi() {
         const n = Number($(id).value);
         if (Number.isFinite(n)) state.params[id] = n;
       }
+      if (['loadRp', 'loadVp', 'loadVg', 'loadVin'].includes(id)) loadPlaced = true;
+      if ((id === 'vpMax' || id === 'ipMax') && !loadPointOnPlot()) centerLoadLine();
       scheduleRedraw();
       persist();
     });
@@ -974,7 +1174,18 @@ function onClick(evt) {
 function onPointerDown(evt) {
   if (calibrator.active) return;
   const local = plot.eventToLocal(evt);
-  canvas.setPointerCapture(evt.pointerId);
+  try {
+    canvas.setPointerCapture(evt.pointerId);
+  } catch {
+    /* synthetic events have no pointer to capture */
+  }
+
+  const handle = hitLoadHandle(local);
+  if (handle) {
+    skipDrawClick = true;
+    drag = { kind: handle, moved: false };
+    return;
+  }
 
   const hit = hitGuideLayers(
     plot,
@@ -1025,7 +1236,23 @@ function onPointerMove(evt) {
   }
   $('cursorReadout').textContent = cursor;
 
+  canvas.style.cursor = hitLoadHandle(local) || drag?.kind === 'vin' || drag?.kind === 'center' ? 'grab' : '';
+
   if (!drag) return;
+
+  if (drag.kind === 'vin' || drag.kind === 'center') {
+    drag.moved = true;
+    if (!(data.vp > 0) || data.ip < 0) return;
+    if (drag.kind === 'center') placeLoadCenter(data.vp, data.ip);
+    else {
+      tiltLoadLine(data.vp, data.ip);
+      const vin = vinFromPoint(data.vp, data.ip);
+      if (vin != null) $('loadVin').value = vin.toFixed(2);
+    }
+    loadPlaced = true;
+    scheduleRedraw();
+    return;
+  }
 
   drag.moved = true;
   const unit = plot.pxToUnit(local.x, local.y);
@@ -1052,8 +1279,14 @@ function onPointerMove(evt) {
 function onPointerUp() {
   if (!drag) return;
   const moved = drag.moved;
+  const kind = drag.kind;
   const layer = drag.layer;
   drag = null;
+  canvas.style.cursor = '';
+  if (kind === 'vin' || kind === 'center') {
+    if (moved) flushPersist();
+    return;
+  }
   if (moved) {
     setGuideLayer(layer, guidesFor(layer), { fit: true });
   }
@@ -1093,6 +1326,7 @@ async function loadPresets() {
 }
 
 restore();
+if (!loadPlaced || !loadPointOnPlot()) centerLoadLine();
 bindUi();
 loadPresets().then(() => {
   scheduleRedraw();

@@ -38,6 +38,7 @@ export class Plot {
     this.positiveColor = '#7c3aed';
     this.loadLine = null;
     this.qPoint = null;
+    this.swingPoints = [];
     this.dissip = null;
     this.igCurves = [];
     this.sumCurves = [];
@@ -426,13 +427,25 @@ export class Plot {
       this.strokePolyline(this.loadLine.map((pt) => this.dataToPx(pt.vp, pt.ip)));
       ctx.restore();
     }
-    if (!this.qPoint) return;
-    const p = this.dataToPx(this.qPoint.vp, this.qPoint.ip);
     ctx.save();
-    ctx.fillStyle = '#111';
-    ctx.beginPath();
-    ctx.arc(p.x, p.y, 3.5, 0, Math.PI * 2);
-    ctx.fill();
+    ctx.strokeStyle = '#111';
+    ctx.fillStyle = '#f4f1ea';
+    ctx.lineWidth = 1.5;
+    for (const pt of this.swingPoints || []) {
+      if (pt.vp == null || pt.ip == null) continue;
+      const s = this.dataToPx(pt.vp, pt.ip);
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, 4.5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+    }
+    if (this.qPoint) {
+      const p = this.dataToPx(this.qPoint.vp, this.qPoint.ip);
+      ctx.fillStyle = '#111';
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, 3.5, 0, Math.PI * 2);
+      ctx.fill();
+    }
     ctx.restore();
   }
 

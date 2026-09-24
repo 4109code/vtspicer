@@ -108,33 +108,66 @@
     <aside class="panel export">
       <section>
         <h2>Load line</h2>
-        <label class="check"><input type="checkbox" id="showLoadLine" checked /> Show load line</label>
-        <div class="grid2">
-          <label>Rp (Ω) <input id="loadRp" type="number" value="100000" step="1000" /></label>
-          <label>Vp (V) <input id="loadVp" type="number" value="250" step="10" /></label>
-          <label id="loadVgRow">Vg (V) <input id="loadVg" type="number" value="-2" step="0.5" /></label>
-          <label id="loadVinRow">Vin peak (V) <input id="loadVin" type="number" value="1" step="0.1" /></label>
-          <label>Pmax (W) <input id="loadPmax" type="number" value="1" step="0.1" /></label>
+        <label class="check load-check"><input type="checkbox" id="showLoadLine" checked /> Show load line <span class="param-hint">Drag the center dot to move the quiescent point</span></label>
+        <div class="load-field">
+          <span class="param-name"><span class="param-key">Rp</span><span class="param-hint">Plate load. Sets the line slope</span></span>
+          <input id="loadRp" type="number" value="100000" step="1000" />
         </div>
-        <label class="check"><input type="checkbox" id="showPmax" checked /> Dissipation limit</label>
-        <label id="showIgRow" class="check"><input type="checkbox" id="showIg" /> Grid current</label>
-        <label id="igModeRow">Ig model
+        <div class="load-field">
+          <span class="param-name"><span class="param-key">Vp</span><span class="param-hint">Quiescent plate voltage</span></span>
+          <input id="loadVp" type="number" value="250" step="10" />
+        </div>
+        <div class="load-field" id="loadVgRow">
+          <span class="param-name"><span class="param-key">Vg</span><span class="param-hint">Quiescent grid voltage</span></span>
+          <input id="loadVg" type="number" value="-2" step="0.5" />
+        </div>
+        <div class="load-field" id="loadVinRow">
+          <span class="param-name"><span class="param-key">Vin</span><span class="param-hint">Peak grid swing. Drag an open dot to set it and tilt the line</span></span>
+          <input id="loadVin" type="number" value="1" step="0.1" />
+        </div>
+        <div class="load-field">
+          <span class="param-name"><span class="param-key">Pmax</span><span class="param-hint">Plate dissipation limit, watts</span></span>
+          <input id="loadPmax" type="number" value="1" step="0.1" />
+        </div>
+        <label class="check load-check"><input type="checkbox" id="showPmax" checked /> Dissipation curve <span class="param-hint">Ip = Pmax / Vp</span></label>
+        <label id="showIgRow" class="check load-check"><input type="checkbox" id="showIg" /> Grid current <span class="param-hint">Ig along each Vg curve</span></label>
+        <div class="load-field" id="igModeRow">
+          <span class="param-name"><span class="param-key">Ig</span><span class="param-hint">Diode uses RGI. Child law is a power of Vg</span></span>
           <select id="igMode">
             <option value="diode" selected>Diode + RGI</option>
             <option value="child">Child law</option>
           </select>
-        </label>
-        <div id="childLawRow" class="grid2">
-          <label>VGOFF <input id="VGOFF" type="number" value="-0.6" step="0.1" /></label>
-          <label>IGA <input id="IGA" type="number" value="0.001" step="0.001" /></label>
-          <label>IGB <input id="IGB" type="number" value="0.3" step="0.1" /></label>
-          <label>IGC <input id="IGC" type="number" value="8" step="1" /></label>
-          <label>IGEX <input id="IGEX" type="number" value="2" step="0.1" /></label>
         </div>
-        <label id="showSumRow" class="check"><input type="checkbox" id="showSum" /> Ip + Ig2</label>
-        <label id="ulRow" class="check"><input type="checkbox" id="ulOn" /> Ultralinear</label>
-        <label id="ulTapRow">UL tap <input id="ulTap" type="number" value="0.43" min="0" max="1" step="0.01" /></label>
-        <pre id="loadResults" class="load-results">—</pre>
+        <div id="childLawRow">
+          <div class="load-field">
+            <span class="param-name"><span class="param-key">VGOFF</span><span class="param-hint">Ig starts above this grid voltage</span></span>
+            <input id="VGOFF" type="number" value="-0.6" step="0.1" />
+          </div>
+          <div class="load-field">
+            <span class="param-name"><span class="param-key">IGA</span><span class="param-hint">Child-law scale. Higher raises Ig</span></span>
+            <input id="IGA" type="number" value="0.001" step="0.001" />
+          </div>
+          <div class="load-field">
+            <span class="param-name"><span class="param-key">IGB</span><span class="param-hint">Extra scale that falls as Vp rises</span></span>
+            <input id="IGB" type="number" value="0.3" step="0.1" />
+          </div>
+          <div class="load-field">
+            <span class="param-name"><span class="param-key">IGC</span><span class="param-hint">Vp where the IGB term eases off</span></span>
+            <input id="IGC" type="number" value="8" step="1" />
+          </div>
+          <div class="load-field">
+            <span class="param-name"><span class="param-key">IGEX</span><span class="param-hint">Bend. Higher rises faster</span></span>
+            <input id="IGEX" type="number" value="2" step="0.1" />
+          </div>
+        </div>
+        <label id="showSumRow" class="check load-check"><input type="checkbox" id="showSum" /> Ip + Ig2 <span class="param-hint">Plate plus screen, screen tied to plate</span></label>
+        <label id="ulRow" class="check load-check"><input type="checkbox" id="ulOn" /> Ultralinear <span class="param-hint">Screen follows the plate through the tap</span></label>
+        <div class="load-field" id="ulTapRow">
+          <span class="param-name"><span class="param-key">UL</span><span class="param-hint">Fraction of plate swing added to Vg2</span></span>
+          <input id="ulTap" type="number" value="0.43" min="0" max="1" step="0.01" />
+        </div>
+        <div id="loadResults" class="load-results"></div>
+        <p id="harmHint" class="param-hint harm-hint">H2–H5 from 10% drive up to Vin</p>
         <canvas id="harmPlot" width="280" height="110"></canvas>
       </section>
       <section>

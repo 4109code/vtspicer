@@ -87,13 +87,47 @@ html, body {
   border-left: 1px solid var(--border);
 }
 
+.load-field {
+  margin-bottom: 0.45rem;
+}
+
+.load-field input,
+.load-field select {
+  margin-top: 0.15rem;
+}
+
+.load-check {
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.load-check .param-hint {
+  flex: 1 1 8rem;
+}
+
 .load-results {
-  margin: 0.4rem 0;
+  margin: 0.6rem 0 0.35rem;
+}
+
+.load-metric {
+  display: grid;
+  grid-template-columns: 4.6rem minmax(0, 1fr);
+  column-gap: 0.35rem;
+  margin-bottom: 0.35rem;
+  font-size: 0.75rem;
+}
+
+.load-metric .param-hint {
+  grid-column: 1 / -1;
+}
+
+.load-value {
   font-family: var(--mono);
-  font-size: 0.68rem;
-  line-height: 1.35;
-  white-space: pre-wrap;
-  color: var(--text);
+}
+
+.harm-hint {
+  margin: 0.35rem 0 0.2rem;
 }
 
 #harmPlot {

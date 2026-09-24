@@ -25,6 +25,22 @@ import { createParamSliders, readCaps, writeCaps, CAP_IDS } from './ui.js';
 
 const STORAGE_KEY = 'koren-tube-modeler-v2';
 
+const TYPE_ORDER = ['triode', 'pentode', 'diode'];
+const TYPE_LABELS = {
+  triode: 'Triode',
+  pentode: 'Pentode',
+  diode: 'Diode',
+};
+
+function modelOptionValue(type, modelId) {
+  return `${type}:${modelId}`;
+}
+
+function parseModelOption(value) {
+  const split = value.indexOf(':');
+  return { type: value.slice(0, split), modelId: value.slice(split + 1) };
+}
+
 const state = {
   modelId: 'koren',
   type: 'triode',
@@ -64,10 +80,20 @@ function syncCalibUi(cal) {
   btn.classList.toggle('danger', cal.active);
 }
 
+/** Plate-axis defaults for a fresh tube of the selected formula. */
+function defaultIpMaxMa(type) {
+  return normalizeType(type) === 'pentode' ? 100 : 10;
+}
+
 /** UI stores Ip max in mA; plot/math use amperes. */
 function readIpMaxA() {
   const ma = Number($('ipMax').value);
-  return Number.isFinite(ma) && ma > 0 ? ma / 1000 : 0.006;
+  return Number.isFinite(ma) && ma > 0 ? ma / 1000 : defaultIpMaxMa(state.type) / 1000;
+}
+
+function applyAxisDefaults() {
+  $('vpMax').value = 400;
+  setIpMaxMa(defaultIpMaxMa(state.type));
 }
 
 function setIpMaxMa(ampsOrMa, { fromAmps = false } = {}) {
@@ -226,24 +252,31 @@ function updateMultiVisibility() {
   if (sliderApi) sliderApi.setMultiGrid(multi);
 }
 
-function updateTypeOptions() {
-  const model = activeModel();
-  const sel = $('tubeType');
-  for (const opt of sel.options) {
-    const ok = model.supports.includes(opt.value);
-    opt.disabled = !ok;
-    opt.hidden = !ok;
+function fillModelOptions() {
+  const sel = $('modelSelect');
+  sel.replaceChildren();
+  for (const type of TYPE_ORDER) {
+    for (const model of listModels()) {
+      if (!model.supports.includes(type)) continue;
+      const opt = document.createElement('option');
+      opt.value = modelOptionValue(type, model.id);
+      opt.textContent = `${TYPE_LABELS[type]}: ${model.label}`;
+      sel.appendChild(opt);
+    }
   }
+}
+
+function syncModelSelect() {
+  const sel = $('modelSelect');
   if (!modelSupports(state.modelId, state.type)) {
-    state.type = model.supports[0];
-    sel.value = state.type;
+    state.type = activeModel().supports[0];
   }
+  sel.value = modelOptionValue(state.type, state.modelId);
 }
 
 function switchModel(modelId, { resetParams = true } = {}) {
   state.modelId = modelId;
-  $('modelSelect').value = modelId;
-  updateTypeOptions();
+  syncModelSelect();
   if (resetParams) {
     const next = defaultParams(modelId, state.type);
     const caps = Object.fromEntries(CAP_IDS.map((id) => [id, state.params[id]]));
@@ -258,19 +291,22 @@ function switchModel(modelId, { resetParams = true } = {}) {
   $('modelNote').hidden = true;
   rebuildSliders();
   refreshPresetOptions();
-  scheduleRedraw();
-  persist();
+  if (!$('presetSelect').value) applyAxisDefaults();
+  if (countGuidePoints(state.guides) >= 2) {
+    runGuideFit();
+  } else {
+    scheduleRedraw();
+    persist();
+  }
 }
 
 function applyPreset(preset) {
   const modelId = preset.model || 'koren';
   state.modelId = modelId;
-  $('modelSelect').value = modelId;
   state.name = preset.name;
   state.type = normalizeType(preset.type);
   $('tubeName').value = preset.name;
-  updateTypeOptions();
-  $('tubeType').value = preset.type;
+  syncModelSelect();
   if (preset.sweep) {
     if (preset.sweep.vgList) $('vgList').value = preset.sweep.vgList;
     if (preset.sweep.vpMax != null) $('vpMax').value = preset.sweep.vpMax;
@@ -294,6 +330,21 @@ function applyPreset(preset) {
   setParams(state.params);
   updateMultiVisibility();
   refreshPresetOptions();
+}
+
+function resetToFormulaDefaults() {
+  $('presetSelect').value = '';
+  const note = $('modelNote');
+  note.hidden = true;
+  note.textContent = '';
+  state.params = defaultParams(state.modelId, state.type);
+  writeCaps(state.params);
+  applyAxisDefaults();
+  state.guides = [];
+  rebuildSliders();
+  updateMultiVisibility();
+  scheduleRedraw();
+  persist();
 }
 
 function persist() {
@@ -348,9 +399,7 @@ function restore() {
       $('tubeName').value = data.name;
     }
     if (data.type) state.type = normalizeType(data.type);
-    $('modelSelect').value = state.modelId;
-    updateTypeOptions();
-    $('tubeType').value = state.type;
+    syncModelSelect();
     if (data.params) {
       state.params = clampParams(state.modelId, {
         ...defaultParams(state.modelId, state.type),
@@ -385,43 +434,35 @@ function restore() {
 }
 
 function bindUi() {
-  const modelSel = $('modelSelect');
-  modelSel.replaceChildren();
-  for (const m of listModels()) {
-    const opt = document.createElement('option');
-    opt.value = m.id;
-    opt.textContent = m.label;
-    modelSel.appendChild(opt);
-  }
-  modelSel.value = state.modelId;
+  fillModelOptions();
+  syncModelSelect();
 
   rebuildSliders();
-  updateTypeOptions();
   updateDrawStatus();
 
   $('modelSelect').addEventListener('change', () => {
-    switchModel($('modelSelect').value, { resetParams: true });
+    const next = parseModelOption($('modelSelect').value);
+    if (next.modelId !== state.modelId) {
+      state.type = next.type;
+      switchModel(next.modelId, { resetParams: true });
+      return;
+    }
+    if (next.type === state.type) return;
+    state.type = next.type;
+    state.params = clampParams(state.modelId, {
+      ...defaultParams(state.modelId, state.type),
+      ...state.params,
+    });
+    if (!$('presetSelect').value) applyAxisDefaults();
+    rebuildSliders();
+    updateMultiVisibility();
+    scheduleRedraw();
+    persist();
   });
 
   $('tubeName').addEventListener('input', () => {
     state.name = $('tubeName').value.trim() || 'TUBE';
     updateSpice();
-    persist();
-  });
-
-  $('tubeType').addEventListener('change', () => {
-    if (!modelSupports(state.modelId, $('tubeType').value)) {
-      $('tubeType').value = state.type;
-      return;
-    }
-    state.type = $('tubeType').value;
-    state.params = clampParams(state.modelId, {
-      ...defaultParams(state.modelId, state.type),
-      ...state.params,
-    });
-    rebuildSliders();
-    updateMultiVisibility();
-    scheduleRedraw();
     persist();
   });
 
@@ -443,6 +484,8 @@ function bindUi() {
       persist();
     });
   }
+
+  $('btnNewTube').addEventListener('click', () => resetToFormulaDefaults());
 
   $('btnFitGuides').addEventListener('click', () => runGuideFit());
   $('btnUndoGuide').addEventListener('click', () => {
@@ -690,8 +733,12 @@ function refreshPresetOptions() {
 }
 
 async function loadPresets() {
-  const res = await fetch('/presets/tubes.json');
-  state.presets = await res.json();
+  const groups = await Promise.all(TYPE_ORDER.map(async (type) => {
+    const res = await fetch(`/presets/tubes/${type}.json`);
+    if (!res.ok) throw new Error(`Failed to load ${type} presets (${res.status})`);
+    return res.json();
+  }));
+  state.presets = groups.flat();
   refreshPresetOptions();
   const sel = $('presetSelect');
   sel.addEventListener('change', () => {

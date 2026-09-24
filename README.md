@@ -1,6 +1,6 @@
 # VTSpicer: Vacuum tube modeling
 
-Overlay plate-current equation on a datasheet image -> match curve -> export as PSpice-compatible `.SUBCKT` -> Simulate
+Match plate curves with equations and export a SPICE .SUBCKT
 
 ## How to use
 
@@ -44,4 +44,4 @@ Open [http://localhost](http://localhost)
 
 ## License
 
-MIT. Koren, Karpov, Duncan, Ayumi, and Immler equations are credited to their authors. Ridge is an original formula in this project.
+MIT. Equations are credited to their authors. Ridge is an original formula in this project.

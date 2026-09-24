@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import {
   listModels,
   getModel,
@@ -231,13 +231,22 @@ describe('duncan rectifier', () => {
 });
 
 describe('tube presets', () => {
-  const presets = JSON.parse(
-    readFileSync(new URL('../presets/tubes.json', import.meta.url), 'utf8'),
-  );
+  const dir = new URL('../presets/tubes/', import.meta.url);
+  const presets = readdirSync(dir)
+    .filter((name) => name.endsWith('.json'))
+    .sort()
+    .flatMap((name) => {
+      const type = name.slice(0, -'.json'.length);
+      return JSON.parse(readFileSync(new URL(name, dir), 'utf8')).map((preset) => ({
+        preset,
+        fileType: type,
+      }));
+    });
 
   it('keeps every published parameter inside the model limits', () => {
     const ids = new Set();
-    for (const preset of presets) {
+    for (const { preset, fileType } of presets) {
+      assert.equal(preset.type, fileType, `${preset.id} filed under ${fileType}.json`);
       assert.ok(!ids.has(preset.id), `duplicate ${preset.id}`);
       ids.add(preset.id);
       const type = normalizeType(preset.type);

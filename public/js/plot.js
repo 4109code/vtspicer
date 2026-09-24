@@ -22,7 +22,7 @@ export class Plot {
       vpMaxPx: null,
       ipMaxPx: null,
       vpMax: 400,
-      ipMax: 0.006,
+      ipMax: 0.01,
     };
     this.curves = [];
     this.screenCurves = [];

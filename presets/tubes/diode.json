@@ -1,0 +1,153 @@
+[
+  {
+    "id": "5C3S",
+    "name": "5C3S",
+    "model": "duncan",
+    "type": "diode",
+    "comment": "Eugene Karpov — Duncan rectifier, Ia = K·Vak^EX",
+    "params": {
+      "K": 0.00079,
+      "EX": 1.45213,
+      "CCP": 5
+    },
+    "sweep": {
+      "vgList": "0",
+      "vpMax": 100,
+      "ipMax": 1
+    }
+  },
+  {
+    "id": "5C4S",
+    "name": "5C4S",
+    "model": "duncan",
+    "type": "diode",
+    "comment": "Eugene Karpov — Duncan rectifier, Ia = K·Vak^EX",
+    "params": {
+      "K": 0.00256,
+      "EX": 1.32431,
+      "CCP": 5
+    },
+    "sweep": {
+      "vgList": "0",
+      "vpMax": 100,
+      "ipMax": 2
+    }
+  },
+  {
+    "id": "5C8S",
+    "name": "5C8S",
+    "model": "duncan",
+    "type": "diode",
+    "comment": "Eugene Karpov — Duncan rectifier, Ia = K·Vak^EX",
+    "params": {
+      "K": 0.00135,
+      "EX": 1.44725,
+      "CCP": 5
+    },
+    "sweep": {
+      "vgList": "0",
+      "vpMax": 100,
+      "ipMax": 2
+    }
+  },
+  {
+    "id": "5V4GA",
+    "name": "5V4GA",
+    "model": "duncan",
+    "type": "diode",
+    "comment": "Duncan Munro — Duncan rectifier, Ia = K·Vak^EX",
+    "params": {
+      "K": 0.0014,
+      "EX": 1.5
+    },
+    "sweep": {
+      "vgList": "0",
+      "vpMax": 100,
+      "ipMax": 2
+    }
+  },
+  {
+    "id": "5Y3GT",
+    "name": "5Y3GT",
+    "model": "duncan",
+    "type": "diode",
+    "comment": "Duncan Munro — Duncan rectifier, Ia = K·Vak^EX",
+    "params": {
+      "K": 0.000269,
+      "EX": 1.5
+    },
+    "sweep": {
+      "vgList": "0",
+      "vpMax": 100,
+      "ipMax": 0.5
+    }
+  },
+  {
+    "id": "6C5S",
+    "name": "6C5S",
+    "model": "duncan",
+    "type": "diode",
+    "comment": "Eugene Karpov — Duncan rectifier, Ia = K·Vak^EX",
+    "params": {
+      "K": 0.00111,
+      "EX": 1.37199,
+      "CCP": 5
+    },
+    "sweep": {
+      "vgList": "0",
+      "vpMax": 100,
+      "ipMax": 1
+    }
+  },
+  {
+    "id": "6D20P",
+    "name": "6D20P",
+    "model": "duncan",
+    "type": "diode",
+    "comment": "Eugene Karpov — Duncan rectifier, Ia = K·Vak^EX",
+    "params": {
+      "K": 0.00409,
+      "EX": 1.39877,
+      "CCP": 8
+    },
+    "sweep": {
+      "vgList": "0",
+      "vpMax": 100,
+      "ipMax": 5
+    }
+  },
+  {
+    "id": "6D22S",
+    "name": "6D22S",
+    "model": "duncan",
+    "type": "diode",
+    "comment": "Duncan Munro — Duncan rectifier, Ia = K·Vak^EX",
+    "params": {
+      "K": 0.006769,
+      "EX": 1.2646,
+      "CCP": 12
+    },
+    "sweep": {
+      "vgList": "0",
+      "vpMax": 100,
+      "ipMax": 5
+    }
+  },
+  {
+    "id": "6X2P",
+    "name": "6X2P",
+    "model": "duncan",
+    "type": "diode",
+    "comment": "Eugene Karpov — Duncan rectifier, Ia = K·Vak^EX",
+    "params": {
+      "K": 0.00214,
+      "EX": 1.35039,
+      "CCP": 3.4
+    },
+    "sweep": {
+      "vgList": "0",
+      "vpMax": 100,
+      "ipMax": 2
+    }
+  }
+]

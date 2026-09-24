@@ -2,7 +2,7 @@
  * Parameter sliders driven by the active model definition.
  *
  * Range: log-mapped for wide-span params.
- * Number: live input/wheel; click-drag scrub — near=coarse, away=fine.
+ * Number: live input/wheel; click-drag scrub — near=fine, away=coarse.
  */
 
 const SLIDER_MAX = 1000;
@@ -113,7 +113,10 @@ export function createParamSliders(container, model, params, onChange) {
       const lim = limits[key];
       const span = lim.max - lim.min;
       const dist = Math.abs(e.clientY - originY);
-      const nearGain = 1 / (1 + dist / 28);
+      // Stay on the row for fine steps; pull up or down to sweep faster.
+      const t = Math.min(1, dist / 160);
+      const s = t * t * (3 - 2 * t);
+      const gain = 0.08 + 0.92 * s;
       const speedBoost = 1 + Math.min(4, Math.abs(dx) / 6);
       let pixelsForSpan = usesLog(key) ? 280 : 220;
       if (e.shiftKey) pixelsForSpan *= 10;
@@ -123,10 +126,10 @@ export function createParamSliders(container, model, params, onChange) {
       if (usesLog(key)) {
         const v = Math.max(Number(num.value) || lim.min, lim.min * 1.0001);
         const logSpan = Math.log(lim.max) - Math.log(lim.min);
-        const dLog = (dx / pixelsForSpan) * logSpan * nearGain * speedBoost;
+        const dLog = (dx / pixelsForSpan) * logSpan * gain * speedBoost;
         next = Math.exp(Math.log(v) + dLog);
       } else {
-        next = Number(num.value) + (dx / pixelsForSpan) * span * nearGain * speedBoost;
+        next = Number(num.value) + (dx / pixelsForSpan) * span * gain * speedBoost;
       }
       apply(clamp(key, next));
     });
@@ -192,7 +195,7 @@ export function createParamSliders(container, model, params, onChange) {
     num.max = lim.max;
     num.step = stepHint(key);
     num.value = formatValue(key, params[key] ?? lim.min, lim);
-    num.title = 'Drag sideways: near=coarse, away=fine · Shift finer · Alt coarser';
+    num.title = 'Drag sideways: near=fine, away=coarse · Shift finer · Alt coarser';
 
     const apply = (v) => {
       const n = clamp(key, Number(v));

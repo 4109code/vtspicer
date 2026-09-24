@@ -24,24 +24,13 @@
   <main class="layout">
     <aside class="panel">
       <section>
-        <h2>Tube</h2>
+        <div class="section-head">
+          <h2>Tube</h2>
+          <button type="button" id="btnNewTube" title="Clear the preset and reset to the selected formula">New</button>
+        </div>
         <label>Name <input id="tubeName" type="text" value="12AX7" /></label>
         <label>Model formula
-          <select id="modelSelect">
-            <option value="koren">Koren</option>
-            <option value="karpov">Karpov</option>
-            <option value="duncan">Duncan</option>
-            <option value="ayumi">Ayumi</option>
-            <option value="immler">Immler</option>
-            <option value="ridge">Ridge (new)</option>
-          </select>
-        </label>
-        <label>Type
-          <select id="tubeType">
-            <option value="triode">Triode</option>
-            <option value="pentode">Pentode / tetrode</option>
-            <option value="diode">Rectifier</option>
-          </select>
+          <select id="modelSelect"></select>
         </label>
         <p id="modelNote" class="hint" hidden></p>
         <label>Preset
@@ -49,10 +38,10 @@
             <option value="">— custom —</option>
           </select>
         </label>
+        <p class="hint">Or paste a <code>.SUBCKT</code> / <code>PARAMS</code> block (Ctrl/Cmd+V)</p>
         <div class="row">
           <button type="button" id="btnPasteParams">Paste params</button>
         </div>
-        <p class="hint">Or paste a <code>.SUBCKT</code> / <code>+ PARAMS:</code> block (Ctrl/Cmd+V).</p>
       </section>
 
       <section>
@@ -67,14 +56,14 @@
         <p id="calibStatus" class="hint">No calibration yet. Click origin (0), then Vpmax, then IpMax.</p>
         <div class="grid2">
           <label>Vp max (V) <input id="vpMax" type="number" value="400" step="10" /></label>
-          <label>Ip max (mA) <input id="ipMax" type="number" value="6" step="0.1" /></label>
+          <label>Ip max (mA) <input id="ipMax" type="number" value="10" step="0.1" /></label>
         </div>
       </section>
 
       <section>
         <h2>Sweep</h2>
-        <label id="vgRow">Vg list <input id="vgList" type="text" value="0:-0.5:-4"
-            title="start:step:end or comma list" /></label>
+        <label id="vgRow">Vg list <span class="hint">max:step:min</span>
+          <input id="vgList" type="text" value="0:-0.5:-4" title="max:step:min, or a comma-separated list" /></label>
         <label id="eg2Row">Vg2 (V) <input id="eg2" type="number" value="300" step="10" /></label>
         <label id="showScreenRow" class="check"><input type="checkbox" id="showScreenCurves" checked /> Show screen
           (Ig2) curves</label>
@@ -84,7 +73,7 @@
 
       <section>
         <h2>Parameters</h2>
-        <p class="hint">Drag a value sideways: near = coarse, away = fine. Shift finer, Alt coarser. Wheel works too.
+        <p class="hint">Drag a value sideways: near = coarse, away = fine. Shift finer, Alt coarser.
         </p>
         <div id="paramSliders"></div>
       </section>

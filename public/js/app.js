@@ -197,6 +197,7 @@ function rebuildSliders() {
     (key, value) => {
       setParams({ [key]: value }, { syncSliders: false });
     },
+    state.type,
   );
   updateMultiVisibility();
 }

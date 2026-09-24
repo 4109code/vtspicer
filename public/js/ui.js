@@ -20,7 +20,14 @@ function formatValue(key, v, lim) {
   return String(Number(n.toFixed(d)));
 }
 
-export function createParamSliders(container, model, params, onChange) {
+function paramHint(model, key, type) {
+  const hint = model.paramHints?.[key];
+  if (!hint) return '';
+  if (typeof hint === 'string') return hint;
+  return hint[type] || '';
+}
+
+export function createParamSliders(container, model, params, onChange, type) {
   container.innerHTML = '';
   const controls = {};
   const limits = model.limits;
@@ -160,7 +167,19 @@ export function createParamSliders(container, model, params, onChange) {
     if (multiSet.has(key)) row.dataset.multi = '1';
 
     const lab = document.createElement('span');
-    lab.textContent = key;
+    lab.className = 'param-name';
+    const keyEl = document.createElement('span');
+    keyEl.className = 'param-key';
+    keyEl.textContent = key;
+    lab.append(keyEl);
+    const hint = paramHint(model, key, type);
+    if (hint) {
+      const hintEl = document.createElement('span');
+      hintEl.className = 'param-hint';
+      hintEl.textContent = hint;
+      lab.append(hintEl);
+      lab.title = hint;
+    }
 
     if (enums[key]) {
       const sel = document.createElement('select');

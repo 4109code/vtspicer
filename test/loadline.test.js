@@ -7,7 +7,8 @@ import {
   screenVoltage,
   analyzeLoadLine,
 } from '../lib/loadline.js';
-import { plateCurrent, defaultParams } from '../lib/tube.js';
+import { plateCurrent, defaultParams, generateSubckt, parseSpiceImport } from '../lib/tube.js';
+import { gridCurrent, childLawIg } from '../lib/models/math.js';
 
 function close(actual, expected, tol = 1e-6) {
   assert.ok(Math.abs(actual - expected) <= tol, `${actual} vs ${expected}`);
@@ -51,6 +52,32 @@ describe('ultralinear screen', () => {
     close(screenVoltage(250, 300, 0.43, 250), 300);
     close(screenVoltage(350, 300, 0.43, 250), 300 + 0.43 * 100);
     close(screenVoltage(350, 300, 0, 250), 300);
+  });
+});
+
+describe('grid current', () => {
+  it('is negligible below 0.3 V and positive above it', () => {
+    assert.ok(gridCurrent(0.2, 2000) < 2e-5);
+    assert.ok(gridCurrent(1.5, 2000) > 1e-4);
+  });
+
+  it('child-law current is zero below VGOFF and rises with Vg', () => {
+    const p = { MU: 20, KG1: 1000, IGA: 0.001, IGB: 0.3, IGC: 8, IGEX: 2, VGOFF: -0.6 };
+    assert.equal(childLawIg(-1, 100, p), 0);
+    const mid = childLawIg(0.5, 100, p);
+    const hi = childLawIg(1.5, 100, p);
+    assert.ok(mid > 0);
+    assert.ok(hi > mid);
+  });
+
+  it('writes the child-law source into a Koren subcircuit and reads it back', () => {
+    const params = { ...defaultParams('koren', 'triode'), gridLaw: 'child', VGOFF: -0.6, IGA: 0.001 };
+    const text = generateSubckt({ modelId: 'koren', name: 'T', type: 'triode', params });
+    assert.match(text, /GG 2 3/);
+    assert.doesNotMatch(text, /\nR1 /);
+    const parsed = parseSpiceImport(text);
+    assert.equal(parsed.params.gridLaw, 'child');
+    assert.equal(parsed.params.VGOFF, -0.6);
   });
 });
 

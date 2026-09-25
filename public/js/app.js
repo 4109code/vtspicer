@@ -84,6 +84,20 @@ function $(id) {
   return document.getElementById(id);
 }
 
+function setNotice(el, text, { error = false } = {}) {
+  if (!el) return;
+  el.hidden = false;
+  el.textContent = text;
+  el.classList.toggle('error', error);
+}
+
+function hideNotice(el) {
+  if (!el) return;
+  el.hidden = true;
+  el.textContent = '';
+  el.classList.remove('error');
+}
+
 function activeModel() {
   return getModel(state.modelId);
 }
@@ -258,7 +272,7 @@ function applyBestLoadLine() {
   const eg2 = Number($('eg2').value) || 300;
   const vpMax = Number($('vpMax').value) || 400;
   const hint = $('loadOptHint');
-  hint.textContent = 'Searching…';
+  setNotice(hint, 'Searching…');
   const best = optimizeLoadLine({
     ipAt: plateAt,
     ig2At: isMultiGrid() ? screenAt : null,
@@ -270,7 +284,7 @@ function applyBestLoadLine() {
     vpHi: vpMax,
   });
   if (!best) {
-    hint.textContent = 'No point under Pmax, THD, and Vc. Raise one of those limits';
+    setNotice(hint, 'No point under Pmax, THD, and Vc. Raise one of those limits', { error: true });
     return;
   }
   $('showLoadLine').checked = true;
@@ -279,7 +293,7 @@ function applyBestLoadLine() {
   $('loadVg').value = best.vg.toFixed(2);
   $('loadVin').value = best.vin.toFixed(2);
   loadPlaced = true;
-  hint.textContent = 'Most output power at or below THD. Plate heat stays within Pmax. Supply stays at or below Vc';
+  setNotice(hint, 'Most output power at or below THD. Plate heat stays within Pmax. Supply stays at or below Vc');
   scheduleRedraw();
   persist();
 }
@@ -399,7 +413,16 @@ function hitLoadHandle(local) {
   if (state.type !== 'diode') {
     for (const pt of plot.swingPoints || []) consider('vin', pt);
   }
-  consider('center', plot.qPoint);
+  if (plot.qPoint) {
+    const p = plot.loadCenterPx();
+    if (p) {
+      const d = (p.x - local.x) ** 2 + (p.y - local.y) ** 2;
+      if (d <= bestD) {
+        bestD = d;
+        best = 'center';
+      }
+    }
+  }
   return best;
 }
 
@@ -676,7 +699,7 @@ function guidePointCount() {
   return countGuidePoints(state.guides) + countGuidePoints(state.screenGuides);
 }
 
-function updateDrawStatus(extra = '') {
+function updateDrawStatus(extra = '', { error = false } = {}) {
   const el = $('drawStatus');
   if (!el) return;
   const plateN = countGuidePoints(state.guides);
@@ -696,6 +719,7 @@ function updateDrawStatus(extra = '') {
     base = `${parts.join(' Â· ')}. Drag points to adjust.`;
   }
   el.textContent = extra ? `${base} ${extra}` : base;
+  el.classList.toggle('error', error);
 }
 
 function runGuideFit() {
@@ -710,7 +734,7 @@ function runGuideFit() {
     state.screenGuides,
   );
   if (!meta.ok) {
-    updateDrawStatus(meta.reason || 'Need at least 2 guide points.');
+    updateDrawStatus(meta.reason || 'Need at least 2 guide points.', { error: true });
     return;
   }
   setParams(params);
@@ -793,7 +817,7 @@ function switchModel(modelId, { resetParams = true } = {}) {
       ...state.params,
     });
   }
-  $('modelNote').hidden = true;
+  hideNotice($('modelNote'));
   rebuildSliders();
   refreshPresetOptions();
   if (!$('presetSelect').value) applyAxisDefaults();
@@ -819,13 +843,8 @@ function applyPreset(preset) {
     if (preset.sweep.eg2 != null) $('eg2').value = preset.sweep.eg2;
   }
   const note = $('modelNote');
-  if (preset.comment) {
-    note.hidden = false;
-    note.textContent = preset.comment;
-  } else {
-    note.hidden = true;
-    note.textContent = '';
-  }
+  if (preset.comment) setNotice(note, preset.comment);
+  else hideNotice(note);
   state.params = clampParams(modelId, {
     ...defaultParams(modelId, preset.type),
     ...preset.params,
@@ -842,9 +861,7 @@ function applyPreset(preset) {
 
 function resetToFormulaDefaults() {
   $('presetSelect').value = '';
-  const note = $('modelNote');
-  note.hidden = true;
-  note.textContent = '';
+  hideNotice($('modelNote'));
   state.params = defaultParams(state.modelId, state.type);
   writeCaps(state.params);
   applyAxisDefaults();
@@ -1122,8 +1139,7 @@ function bindUi() {
     const parsed = parseSpiceImport(text);
     const note = $('modelNote');
     if (!parsed.ok) {
-      note.hidden = false;
-      note.textContent = parsed.reason;
+      setNotice(note, parsed.reason, { error: true });
       return false;
     }
     const model = getModel(parsed.modelId);
@@ -1159,9 +1175,7 @@ function bindUi() {
         btn.textContent = 'Paste params';
       }, 1200);
     } catch {
-      const note = $('modelNote');
-      note.hidden = false;
-      note.textContent = 'Could not read the clipboard. Click the page and press Ctrl+V.';
+      setNotice($('modelNote'), 'Could not read the clipboard. Click the page and press Ctrl+V.', { error: true });
     }
   });
 
@@ -1378,7 +1392,7 @@ function refreshPresetOptions() {
   if ([...sel.options].some((o) => o.value === current)) sel.value = current;
   else {
     sel.value = '';
-    if (current) $('modelNote').hidden = true;
+    if (current) hideNotice($('modelNote'));
   }
 }
 
@@ -1394,7 +1408,7 @@ async function loadPresets() {
   sel.addEventListener('change', () => {
     const preset = state.presets.find((p) => p.id === sel.value);
     if (preset) applyPreset(preset);
-    else $('modelNote').hidden = true;
+    else hideNotice($('modelNote'));
   });
 }
 

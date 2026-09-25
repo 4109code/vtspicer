@@ -334,6 +334,11 @@ button.danger:hover {
   line-height: 1.35;
 }
 
+.hint.error,
+.param-hint.error {
+  color: #ff6b6b;
+}
+
 .draw-controls {
   margin-top: 0;
   padding: 0.5rem;

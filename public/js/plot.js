@@ -2,6 +2,12 @@
  * Canvas plot: datasheet image + calibrated axes + curve overlay.
  */
 
+const GRID_DIVISIONS = 10;
+const CENTER_R = 3.5;
+const SWING_R = 4.5;
+/** Clearance so a parked center stays grabbable beside a swing ring on the same border. */
+const HANDLE_GAP = CENTER_R + SWING_R + 3;
+
 function formatTick(n) {
   if (!Number.isFinite(n)) return '';
   const abs = Math.abs(n);
@@ -11,6 +17,157 @@ function formatTick(n) {
 
 export function formatMa(amps) {
   return +(amps * 1000).toFixed(3);
+}
+
+function insideRect(p, rect) {
+  return p.x >= rect.x0 && p.x <= rect.x1 && p.y >= rect.y0 && p.y <= rect.y1;
+}
+
+function dedupeHits(hits) {
+  const out = [];
+  for (const h of hits) {
+    if (out.some((p) => Math.hypot(p.x - h.x, p.y - h.y) < 0.5)) continue;
+    out.push(h);
+  }
+  return out;
+}
+
+/** Intersections of the infinite line through a→b with the rectangle edges. */
+function lineRectHits(a, b, rect) {
+  const dx = b.x - a.x;
+  const dy = b.y - a.y;
+  const hits = [];
+  const eps = 1e-6;
+  if (Math.abs(dx) > eps) {
+    for (const x of [rect.x0, rect.x1]) {
+      const t = (x - a.x) / dx;
+      const y = a.y + t * dy;
+      if (y >= rect.y0 - eps && y <= rect.y1 + eps) hits.push({ x, y });
+    }
+  }
+  if (Math.abs(dy) > eps) {
+    for (const y of [rect.y0, rect.y1]) {
+      const t = (y - a.y) / dy;
+      const x = a.x + t * dx;
+      if (x >= rect.x0 - eps && x <= rect.x1 + eps) hits.push({ x, y });
+    }
+  }
+  return dedupeHits(hits);
+}
+
+function axisClamp(p, rect) {
+  return {
+    x: Math.min(rect.x1, Math.max(rect.x0, p.x)),
+    y: Math.min(rect.y1, Math.max(rect.y0, p.y)),
+  };
+}
+
+function dominantEdge(p, rect) {
+  const edges = [
+    ['left', Math.abs(p.x - rect.x0)],
+    ['right', Math.abs(p.x - rect.x1)],
+    ['top', Math.abs(p.y - rect.y0)],
+    ['bottom', Math.abs(p.y - rect.y1)],
+  ];
+  edges.sort((a, b) => a[1] - b[1]);
+  return edges[0][0];
+}
+
+function edgeTangents(edge) {
+  if (edge === 'left' || edge === 'right') return [{ x: 0, y: -1 }, { x: 0, y: 1 }];
+  return [{ x: -1, y: 0 }, { x: 1, y: 0 }];
+}
+
+function roomAlong(p, tangent, rect) {
+  if (tangent.x > 0) return rect.x1 - p.x;
+  if (tangent.x < 0) return p.x - rect.x0;
+  if (tangent.y > 0) return rect.y1 - p.y;
+  return p.y - rect.y0;
+}
+
+/** Smallest s≥0 such that moving from p along tangent clears o by gap. */
+function clearanceShift(p, o, tangent, gap) {
+  const vx = p.x - o.x;
+  const vy = p.y - o.y;
+  const dist = Math.hypot(vx, vy);
+  if (dist >= gap) return 0;
+  const vd = vx * tangent.x + vy * tangent.y;
+  const disc = vd * vd - dist * dist + gap * gap;
+  return -vd + Math.sqrt(Math.max(0, disc));
+}
+
+function nearestWithin(p, avoid, gap) {
+  let best = null;
+  let bestD = gap;
+  for (const o of avoid) {
+    if (!o) continue;
+    const d = Math.hypot(p.x - o.x, p.y - o.y);
+    if (d < bestD) {
+      bestD = d;
+      best = o;
+    }
+  }
+  return best;
+}
+
+function snapToEdge(p, edge, rect) {
+  if (edge === 'left') return { x: rect.x0, y: p.y };
+  if (edge === 'right') return { x: rect.x1, y: p.y };
+  if (edge === 'top') return { x: p.x, y: rect.y0 };
+  return { x: p.x, y: rect.y1 };
+}
+
+/** Slide along the border until the dot is gap away from every obstacle. */
+function slideClear(p, rect, avoid, gap) {
+  let cur = { x: p.x, y: p.y };
+  for (let n = 0; n < avoid.length + 2; n++) {
+    const o = nearestWithin(cur, avoid, gap);
+    if (!o) return cur;
+    const edge = dominantEdge(cur, rect);
+    const tangents = edgeTangents(edge);
+    let tangent = null;
+    let best = -Infinity;
+    for (const t of tangents) {
+      if (roomAlong(cur, t, rect) < 0.5) continue;
+      const score = (cur.x - o.x) * t.x + (cur.y - o.y) * t.y;
+      if (score > best) {
+        best = score;
+        tangent = t;
+      }
+    }
+    if (!tangent) return cur;
+    const s = clearanceShift(cur, o, tangent, gap);
+    const room = roomAlong(cur, tangent, rect);
+    const step = Math.min(s, Math.max(0, room));
+    cur = snapToEdge(
+      { x: cur.x + tangent.x * step, y: cur.y + tangent.y * step },
+      edge,
+      rect,
+    );
+  }
+  return cur;
+}
+
+/**
+ * Pixel for the load-line center. A point outside the canvas is parked on the
+ * border where the load line exits, then slid along that border so a swing
+ * marker already sitting there does not cover it.
+ */
+export function parkOnCanvas(point, line, rect, avoid = [], gap = HANDLE_GAP) {
+  if (!point || !Number.isFinite(point.x) || !Number.isFinite(point.y)) return null;
+  if (insideRect(point, rect)) return { x: point.x, y: point.y };
+  const a = line?.[0];
+  const b = line?.[1];
+  let parked = axisClamp(point, rect);
+  if (a && b && Number.isFinite(a.x) && Number.isFinite(b.x)) {
+    const hits = lineRectHits(a, b, rect);
+    if (hits.length) {
+      parked = hits.reduce((best, h) => (
+        Math.hypot(h.x - point.x, h.y - point.y) < Math.hypot(best.x - point.x, best.y - point.y) ? h : best
+      ));
+    }
+  }
+  return slideClear(parked, rect, avoid, gap);
 }
 
 export class Plot {
@@ -197,6 +354,7 @@ export class Plot {
     const h = this.canvas.height;
     ctx.clearRect(0, 0, w, h);
     this.paintBackdrop(ctx);
+    if (!this.image) this.drawGridLabels(this.plotBox(), GRID_DIVISIONS);
 
     this.drawAxesLabels();
     this.drawCurves();
@@ -213,7 +371,7 @@ export class Plot {
   drawGrid() {
     const ctx = this.ctx;
     const box = this.plotBox();
-    const divisions = 10;
+    const divisions = GRID_DIVISIONS;
     ctx.strokeStyle = '#d0cbc0';
     ctx.lineWidth = 1;
     for (let i = 0; i <= divisions; i++) {
@@ -228,7 +386,6 @@ export class Plot {
       ctx.lineTo(box.x + box.w, y);
       ctx.stroke();
     }
-    this.drawGridLabels(box, divisions);
   }
 
   drawGridLabels(box, divisions) {
@@ -434,6 +591,30 @@ export class Plot {
     ctx.restore();
   }
 
+  canvasInset(pad) {
+    return {
+      x0: pad,
+      y0: pad,
+      x1: this.canvas.width - pad,
+      y1: this.canvas.height - pad,
+    };
+  }
+
+  /** Drawn pixel of the quiescent dot, parked on the canvas border when the point is off-plot. */
+  loadCenterPx() {
+    if (!this.qPoint || this.qPoint.vp == null || this.qPoint.ip == null) return null;
+    const line = (this.loadLine || []).map((pt) => this.dataToPx(pt.vp, pt.ip));
+    const avoid = (this.swingPoints || [])
+      .filter((pt) => pt && pt.vp != null && pt.ip != null)
+      .map((pt) => this.dataToPx(pt.vp, pt.ip));
+    return parkOnCanvas(
+      this.dataToPx(this.qPoint.vp, this.qPoint.ip),
+      line,
+      this.canvasInset(CENTER_R + 1),
+      avoid,
+    );
+  }
+
   drawLoadLine() {
     const ctx = this.ctx;
     if (this.loadLine?.length) {
@@ -451,15 +632,15 @@ export class Plot {
       if (pt.vp == null || pt.ip == null) continue;
       const s = this.dataToPx(pt.vp, pt.ip);
       ctx.beginPath();
-      ctx.arc(s.x, s.y, 4.5, 0, Math.PI * 2);
+      ctx.arc(s.x, s.y, SWING_R, 0, Math.PI * 2);
       ctx.fill();
       ctx.stroke();
     }
-    if (this.qPoint) {
-      const p = this.dataToPx(this.qPoint.vp, this.qPoint.ip);
+    const center = this.loadCenterPx();
+    if (center) {
       ctx.fillStyle = '#111';
       ctx.beginPath();
-      ctx.arc(p.x, p.y, 3.5, 0, Math.PI * 2);
+      ctx.arc(center.x, center.y, CENTER_R, 0, Math.PI * 2);
       ctx.fill();
     }
     ctx.restore();

@@ -537,7 +537,7 @@ function redraw() {
   plot.guides = state.guides;
   plot.screenGuides = state.screenGuides;
   plot.draw();
-  const nextSpiceKey = JSON.stringify([state.modelId, state.name, state.type, state.params, readCaps()]);
+  const nextSpiceKey = JSON.stringify([state.modelId, state.name, state.type, state.params, readCaps(), readPins()]);
   if (nextSpiceKey !== spiceKey) {
     updateSpice();
     spiceKey = nextSpiceKey;
@@ -654,6 +654,27 @@ function drawHarmonics(sweep) {
   });
 }
 
+const PIN_INPUTS = {
+  triode: { P: 'pinP', G: 'pinG', C: 'pinC' },
+  pentode: { P: 'pinP', G1: 'pinG', C: 'pinC', G2: 'pinG2' },
+  diode: { A: 'pinA', K: 'pinK' },
+};
+
+function readPins() {
+  const fields = PIN_INPUTS[state.type] || PIN_INPUTS.triode;
+  const pins = {};
+  for (const [role, id] of Object.entries(fields)) pins[role] = $(id).value;
+  return pins;
+}
+
+function writePins(pins) {
+  if (!pins) return;
+  const fields = { ...PIN_INPUTS.triode, ...PIN_INPUTS.pentode, ...PIN_INPUTS.diode };
+  for (const [role, id] of Object.entries(fields)) {
+    if (typeof pins[role] === 'string' && pins[role]) $(id).value = pins[role];
+  }
+}
+
 function updateSpice() {
   const caps = readCaps();
   Object.assign(state.params, caps);
@@ -663,6 +684,7 @@ function updateSpice() {
     name: state.name,
     type: state.type,
     params: state.params,
+    pins: readPins(),
     comment: `${model.label} model — fitted ${new Date().toISOString().slice(0, 10)}`,
   });
   $('spiceOut').value = text;
@@ -777,6 +799,13 @@ function updateMultiVisibility() {
   $('ulTapRow').style.display = multi && $('ulOn').checked ? '' : 'none';
   $('harmPlot').style.display = diode ? 'none' : '';
   $('loadOpt').style.display = diode ? 'none' : '';
+  $('pinAWrap').style.display = diode ? '' : 'none';
+  $('pinKWrap').style.display = diode ? '' : 'none';
+  $('pinPWrap').style.display = diode ? 'none' : '';
+  $('pinGWrap').style.display = diode ? 'none' : '';
+  $('pinCWrap').style.display = diode ? 'none' : '';
+  $('pinG2Wrap').style.display = multi ? '' : 'none';
+  $('pinGLabel').textContent = multi ? 'G1' : 'G';
   if (sliderApi) sliderApi.setMultiGrid(multi);
 }
 
@@ -901,6 +930,13 @@ function writePersist() {
       child: Object.fromEntries(CHILD_KEYS.map((key) => [key, Number($(key).value)])),
       guides: state.guides,
       screenGuides: state.screenGuides,
+      pins: {
+        ...Object.fromEntries(Object.entries(PIN_INPUTS.triode).map(([role, id]) => [role, $(id).value])),
+        G1: $('pinG').value,
+        G2: $('pinG2').value,
+        A: $('pinA').value,
+        K: $('pinK').value,
+      },
       calib: {
         origin: plot.calib.origin,
         vpMaxPx: plot.calib.vpMaxPx,
@@ -995,6 +1031,7 @@ function restore() {
   }
   const vpMax = plot.calib.vpScale > 0 ? plot.calib.vpScale : Number(data.vpMax) || 400;
   const ipMax = plot.calib.ipScale > 0 ? plot.calib.ipScale : storedAmps(data.ipMax, 0.01);
+  if (data.pins) writePins(data.pins);
   if (Array.isArray(data.guides)) state.guides = migrateGuides(data.guides, vpMax, ipMax);
   if (Array.isArray(data.screenGuides)) {
     state.screenGuides = migrateGuides(data.screenGuides, vpMax, ipMax);
@@ -1073,6 +1110,13 @@ function bindUi() {
 
   for (const id of CAP_IDS) {
     $(id).addEventListener('change', () => {
+      updateSpice();
+      persist();
+    });
+  }
+
+  for (const id of ['pinA', 'pinK', 'pinP', 'pinG', 'pinC', 'pinG2']) {
+    $(id).addEventListener('input', () => {
       updateSpice();
       persist();
     });
@@ -1160,6 +1204,11 @@ function bindUi() {
       params: parsed.params,
       comment,
     });
+    if (parsed.pins) {
+      writePins(parsed.pins);
+      updateSpice();
+      persist();
+    }
     $('presetSelect').value = '';
     return true;
   }

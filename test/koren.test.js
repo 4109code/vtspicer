@@ -121,4 +121,19 @@ describe('generateSubckt', () => {
     assert.match(text, /KG2=/);
     assert.match(text, /ATAN/);
   });
+
+  it('uses the given pin names in the header and the formulas', () => {
+    const text = generateSubckt({
+      name: '12AX7',
+      type: 'triode',
+      pins: { P: 'A', G: 'G', C: 'K' },
+      params: { MU: 100, EX: 1.4, KG1: 1060, KP: 600, KVB: 300 },
+    });
+    assert.match(text, /\.SUBCKT 12AX7 A G K/);
+    assert.match(text, /V\(A,K\)/);
+    assert.match(text, /V\(G,K\)/);
+    assert.match(text, /G1 A K VALUE=/);
+    assert.match(text, /C1 G K/);
+    assert.doesNotMatch(text, /V\(1,3\)/);
+  });
 });

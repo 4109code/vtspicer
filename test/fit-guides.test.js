@@ -143,4 +143,56 @@ describe('fitToTargets', () => {
     assert.ok(sse(fitted, plate) < sse(start, plate));
     assert.ok(sse(fitted, screen) < sse(start, screen) * 0.5);
   });
+
+  it('places enabled ridge pentode dips on the guides and keeps them there', () => {
+    const eg2 = 250;
+    const truth = {
+      ...getModel('ridge').defaults.pentode,
+      ND: 2,
+      DD1: 0.5,
+      VD1: 36,
+      WD1: 18,
+      DD2: 0.3,
+      VD2: 150,
+      WD2: 28,
+    };
+    const start = {
+      ...getModel('ridge').defaults.pentode,
+      ND: 2,
+      DD1: 0,
+      VD1: 0,
+      WD1: 45,
+      DD2: 0,
+      VD2: 70,
+      WD2: 28,
+    };
+    const samples = [];
+    for (const eg of [0, -3, -7]) {
+      for (const ep of [15, 36, 70, 110, 150, 220, 320]) {
+        samples.push({
+          Eg: eg,
+          Ep: ep,
+          Eg2: eg2,
+          ip: plateCurrent('ridge', 'pentode', eg, ep, eg2, truth),
+        });
+      }
+    }
+    const fitted = fitToTargets('ridge', 'pentode', start, samples, { iterations: 50 });
+    assert.ok(Math.abs(fitted.VD1 - 36) < 18, `VD1=${fitted.VD1}`);
+    assert.ok(Math.abs(fitted.VD2 - 150) < 30, `VD2=${fitted.VD2}`);
+    assert.ok(fitted.DD1 > 0.15, `DD1=${fitted.DD1}`);
+    assert.ok(fitted.DD2 > 0.08, `DD2=${fitted.DD2}`);
+    assert.ok(fitted.VD2 < 360, `VD2=${fitted.VD2}`);
+    assert.ok(fitted.WD1 > 8 && fitted.WD2 > 8, `WD=${fitted.WD1},${fitted.WD2}`);
+    assert.ok(fitted.MU2 > 8 && fitted.MU2 < 60, `MU2=${fitted.MU2}`);
+
+    const dragged = samples.map((t) => ({ ...t }));
+    const hit = dragged.find((t) => t.Eg === -7 && t.Ep === 36);
+    hit.ip *= 0.8;
+    const again = fitToTargets('ridge', 'pentode', fitted, dragged, { iterations: 40 });
+    assert.ok(again.VD1 > 5 && again.VD1 < 120, `drag VD1=${again.VD1}`);
+    assert.ok(again.VD2 > 80 && again.VD2 < 280, `drag VD2=${again.VD2}`);
+    assert.ok(again.WD1 > 8 && again.WD2 > 8, `drag WD=${again.WD1},${again.WD2}`);
+    assert.ok(again.MU2 > 6 && again.MU2 < 70, `drag MU2=${again.MU2}`);
+  });
 });

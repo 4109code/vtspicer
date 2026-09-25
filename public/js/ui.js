@@ -53,7 +53,7 @@ export function createParamSliders(container, model, params, onChange, type) {
     for (const key of model.paramKeys) {
       const slot = dipOf(key);
       if (!slot || !controls[key]) continue;
-      controls[key].row.hidden = slot > n;
+      controls[key].row.hidden = slot < 0 ? n < 1 : slot > n;
     }
   }
 

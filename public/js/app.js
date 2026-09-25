@@ -272,7 +272,7 @@ function applyBestLoadLine() {
   const eg2 = Number($('eg2').value) || 300;
   const vpMax = Number($('vpMax').value) || 400;
   const hint = $('loadOptHint');
-  setNotice(hint, 'Searching…');
+  setNotice(hint, 'Searchingï¿½');
   const best = optimizeLoadLine({
     ipAt: plateAt,
     ig2At: isMultiGrid() ? screenAt : null,
@@ -593,7 +593,7 @@ function updateLoadResults(op, load, diode) {
   }
   if (isMultiGrid()) {
     rows.push(loadMetric('Ig2', fmtFix(op.ig2 * 1000, 2, ' mA'), 'Screen current at this point'));
-    rows.push(loadMetric('Ps', fmtFix(op.screenDissipation, 2, ' W'), 'Screen heat. Vg2 times Ig2'));
+    rows.push(loadMetric('Pg2', fmtFix(op.screenDissipation, 2, ' W'), 'Screen heat. Vg2 times Ig2'));
   }
   if (diode) {
     rows.push(loadMetric('Ra', fmtOhm(op.ra), 'Plate resistance. How Ip moves with Vp'));

@@ -123,14 +123,31 @@ describe('ridge voltage dips', () => {
     }
   });
 
-  it('pulls low-voltage plate current down without moving the far plateau', () => {
-    const dipped = { ...base, ND: 1, DD1: 0.45, VD1: 0, WD1: 40 };
-    const near = plateCurrent('ridge', 'pentode', 0, 15, 250, dipped);
-    const near0 = plateCurrent('ridge', 'pentode', 0, 15, 250, base);
-    const far = plateCurrent('ridge', 'pentode', 0, 300, 250, dipped);
-    const far0 = plateCurrent('ridge', 'pentode', 0, 300, 250, base);
-    assert.ok(near < near0 * 0.75);
-    assert.ok(Math.abs(far - far0) / far0 < 0.01);
+  it('cuts a low-current curve more than the Vg=0 curve and leaves the far plateau', () => {
+    const dipped = { ...base, ND: 1, DD1: 0.55, VD1: 40, WD1: 28 };
+    const eg2 = 250;
+    const ep = 40;
+    const frac = (eg) => {
+      const plain = plateCurrent('ridge', 'pentode', eg, ep, eg2, base);
+      const cut = plateCurrent('ridge', 'pentode', eg, ep, eg2, dipped);
+      return 1 - cut / plain;
+    };
+    const top = frac(0);
+    const low = frac(-8);
+    assert.ok(top > 0.02, `top=${top}`);
+    assert.ok(low > top * 2, `low=${low} top=${top}`);
+    const flat = { ...dipped, DH: 1 };
+    const gone = { ...dipped, DH: 0 };
+    const fracAt = (p, eg) => {
+      const plain = plateCurrent('ridge', 'pentode', eg, ep, eg2, base);
+      return 1 - plateCurrent('ridge', 'pentode', eg, ep, eg2, p) / plain;
+    };
+    assert.ok(Math.abs(fracAt(flat, 0) - fracAt(flat, -8)) < 0.05);
+    assert.ok(fracAt(gone, 0) < 0.02, `high=${fracAt(gone, 0)}`);
+    assert.ok(fracAt(gone, -8) > 0.2);
+    const far = plateCurrent('ridge', 'pentode', 0, 300, eg2, dipped);
+    const far0 = plateCurrent('ridge', 'pentode', 0, 300, eg2, base);
+    assert.ok(Math.abs(far - far0) / far0 < 0.02);
   });
 
   it('places a second dip in the middle while the first stays at the start', () => {
@@ -183,7 +200,8 @@ describe('ridge voltage dips', () => {
     });
     assert.match(dipped, /DD1=0\.2/);
     assert.match(dipped, /DD2=0\.15/);
-    assert.match(dipped, /1-DD1\*EXP\(-PWR\(\(URAMP\(V\(1,3\)\)-VD1\)\/WD1,2\)\)/);
+    assert.match(dipped, /DH=0\.25/);
+    assert.match(dipped, /1-DD1\*EXP\(-PWR\(\(URAMP\(V\(1,3\)\)-VD1\)\/WD1,2\)\)\*\(DH\+\(1-DH\)\*URAMP\(2\/\(1\+PWR\(V\(14\)\/MAX\(V\(17\),1E-9\),EX\)\)-1\)\)/);
     assert.match(dipped, /1-DD2\*EXP/);
   });
 });

@@ -27,7 +27,7 @@ Parts of this tool were inspired by Dmitry Nizhegorodsky's Paint_KIT (Triode mod
 - **Koren** — classic softplus / `atan` phenomenological forms ([article](https://www.normankoren.com/Audio/Tubemodspice_article.html)). Author: Norman Koren.
 - **Karpov** — Koren pentode plate law with a residual screen: `Ig2 = max(0, Ik − Ip)`, `Ik = max(Eg2/μ + Eg, 0)^EX / KC`. Knee is `atan(Ep/KVB)` or `1.57·tanh(2·Ep/(KVB·π))`. Author: Eugene Karpov.
 - **Duncan** — rectifier `Ia = K·max(Vak,0)^EX`. Author: Duncan Munro.
-- **Ridge** — original smooth control-voltage ridge + space-charge law. Pentode plate/screen split is explicit: `KN` sets the knee, `RS` is the screen share left at high Vp (so Ig2 falls as Ep rises), `MU2` sets how flat the saturated plate curves stay. `ND` adds up to three optional Gaussian dips on plate share (`DDn` depth, `VDn` center, `WDn` width). Depth 0 or `ND` off drops the term.
+- **Ridge** — original smooth control-voltage ridge + space-charge law. Pentode plate/screen split is explicit: `KN` sets the knee, `RS` is the screen share left at high Vp (so Ig2 falls as Ep rises), `MU2` sets how flat the saturated plate curves stay. `ND` adds up to three optional Gaussian dips on plate share (`DDn` depth near cutoff, `VDn` center, `WDn` width). `DH` is the fraction of that depth left at Vg=0 and above. Depth 0 or `ND` off drops the term.
 
 ## Requirements
 

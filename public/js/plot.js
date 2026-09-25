@@ -186,7 +186,7 @@ export class Plot {
       ipMaxPx: null,
       vpMax: 400,
       ipMax: 0.01,
-      /** Axis end values captured when calibration finished. Guides use these, not the live sweep maxima. */
+      /** Axis end values captured when calibration finished. Older fraction guides convert back with these. */
       vpScale: null,
       ipScale: null,
     };
@@ -254,10 +254,7 @@ export class Plot {
     return { vp: u * c.vpMax, ip: v * c.ipMax };
   }
 
-  /**
-   * Fraction along the calibrated axes (or the plot box). Independent of the
-   * numeric Vp/Ip maxima, so a guide stays on the datasheet when those change.
-   */
+  /** Fraction along the calibrated axes, or the plot box when they are not set. */
   pxToUnit(x, y) {
     if (this.isCalibrated()) {
       const b = this.calibBasis();
@@ -292,13 +289,10 @@ export class Plot {
     };
   }
 
-  /** Volts/amps for a guide fraction: calibrated scale when set, else the live maxima. */
+  /** Volts and amps for an axis fraction, on the same maxima the curves are drawn with. */
   unitToData(u, v) {
     const c = this.calib;
-    const useScale = this.isCalibrated() && c.vpScale > 0 && c.ipScale > 0;
-    const vpMax = useScale ? c.vpScale : c.vpMax;
-    const ipMax = useScale ? c.ipScale : c.ipMax;
-    return { vp: u * vpMax, ip: v * ipMax };
+    return { vp: u * c.vpMax, ip: v * c.ipMax };
   }
 
   plotBox() {
@@ -653,7 +647,7 @@ export class Plot {
     for (const g of guides) {
       const pts = g.points || [];
       if (!pts.length) continue;
-      const px = pts.map((pt) => this.unitToPx(pt.u, pt.v));
+      const px = pts.map((pt) => this.dataToPx(pt.vp, pt.ip));
 
       ctx.save();
       ctx.setLineDash([7, 5]);

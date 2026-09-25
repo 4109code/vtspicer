@@ -129,18 +129,18 @@ function applyAxisDefaults({ keepMax = false } = {}) {
 }
 
 function applyFormulaAxes() {
-  applyAxisDefaults({ keepMax: Boolean(plot.image) && plot.isCalibrated() });
+  applyAxisDefaults({ keepMax: true });
 }
 
-/** Turn saved {vp, ip} points into axis fractions using the scale they were stored against. */
+/** Turn saved axis fractions back into volts and amps. Points already in volts stay. */
 function migrateGuides(guides, vpMax, ipMax) {
   return (guides || []).map((g) => ({
     vg: g.vg,
     points: (g.points || []).map((p) => {
-      if (Number.isFinite(p.u) && Number.isFinite(p.v)) return { u: p.u, v: p.v };
+      if (Number.isFinite(p.vp) && Number.isFinite(p.ip)) return { vp: p.vp, ip: p.ip };
       return {
-        u: vpMax > 0 ? p.vp / vpMax : 0,
-        v: ipMax > 0 ? p.ip / ipMax : 0,
+        vp: vpMax > 0 ? p.u * vpMax : 0,
+        ip: ipMax > 0 ? p.v * ipMax : 0,
       };
     }),
   }));
@@ -757,7 +757,6 @@ function runGuideFit() {
     state.params,
     state.guides,
     eg2,
-    (u, v) => plot.unitToData(u, v),
     state.screenGuides,
   );
   if (!meta.ok) {
@@ -1301,11 +1300,11 @@ function onClick(evt) {
     return;
   }
 
-  const unit = plot.pxToUnit(local.x, local.y);
+  const data = plot.pxToData(local.x, local.y);
   const vg = Number($('drawVg').value);
   if (!Number.isFinite(vg)) return;
   const layer = guideLayer();
-  setGuideLayer(layer, addGuidePoint(guidesFor(layer), vg, unit.u, Math.max(0, unit.v)), { fit: true });
+  setGuideLayer(layer, addGuidePoint(guidesFor(layer), vg, data.vp, Math.max(0, data.ip)), { fit: true });
 }
 
 function onPointerDown(evt) {
@@ -1392,17 +1391,17 @@ function onPointerMove(evt) {
   }
 
   drag.moved = true;
-  const unit = plot.pxToUnit(local.x, local.y);
+  const placed = plot.pxToData(local.x, local.y);
   const source = guidesFor(drag.layer);
   const guides = cloneGuides(source);
   const curve = guides[drag.gi];
   if (!curve) return;
-  curve.points[drag.pi] = { u: unit.u, v: Math.max(0, unit.v) };
-  curve.points.sort((a, b) => a.u - b.u);
+  curve.points[drag.pi] = { vp: placed.vp, ip: Math.max(0, placed.ip) };
+  curve.points.sort((a, b) => a.vp - b.vp);
   let bestPi = 0;
   let bestD = Infinity;
   curve.points.forEach((pt, i) => {
-    const d = (pt.u - unit.u) ** 2 + (pt.v - unit.v) ** 2;
+    const d = (pt.vp - placed.vp) ** 2 + (pt.ip - placed.ip) ** 2;
     if (d < bestD) {
       bestD = d;
       bestPi = i;

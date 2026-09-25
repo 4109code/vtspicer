@@ -59,6 +59,9 @@ describe('multi-model curveFamily / spice', () => {
     assert.match(text, /1 2 3 4/);
     assert.match(text, /G2 4 3/);
     assert.match(text, /ABS\(V\(13\)\)/);
+    const sources = text.match(/^[A-Za-z]\S*\s+\S+\s+\S+\s+VALUE=/gm) || [];
+    assert.ok(sources.length > 0);
+    for (const line of sources) assert.match(line, /^[EG]/);
   });
 });
 

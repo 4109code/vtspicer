@@ -460,7 +460,6 @@ function redraw() {
   plot.calib.vpMax = Number($('vpMax').value) || 400;
   plot.calib.ipMax = readIpMaxA();
   plot.imageOpacity = Number($('imageOpacity').value) / 100;
-  plot.curveColor = $('curveColor').value;
 
   const eg2 = Number($('eg2').value) || 300;
   const vpSteps = Number($('vpSteps').value) || 120;
@@ -1037,7 +1036,7 @@ function bindUi() {
   });
 
   for (const id of [
-    'vgList', 'vpMax', 'ipMax', 'eg2', 'vpSteps', 'curveColor', 'imageOpacity',
+    'vgList', 'vpMax', 'ipMax', 'eg2', 'vpSteps', 'imageOpacity',
     'loadRp', 'loadVp', 'loadVg', 'loadVin', 'loadPmax', 'loadThd', 'loadVc', 'ulTap',
     ...CHILD_KEYS,
   ]) {

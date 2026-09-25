@@ -5,6 +5,9 @@
 const GRID_DIVISIONS = 10;
 const CENTER_R = 3.5;
 const SWING_R = 4.5;
+const NEGATIVE_GRID_COLOR = '#1e3a8a';
+const POSITIVE_GRID_COLOR = '#7f1d1d';
+const PMAX_COLOR = '#ff2a2a';
 /** Clearance so a parked center stays grabbable beside a swing ring on the same border. */
 const HANDLE_GAP = CENTER_R + SWING_R + 3;
 
@@ -176,7 +179,6 @@ export class Plot {
     this.ctx = canvas.getContext('2d');
     this.image = null;
     this.imageOpacity = 0.55;
-    this.curveColor = '#c0392b';
     /** @type {{ origin: {x,y}|null, vpMaxPx: {x,y}|null, ipMaxPx: {x,y}|null, vpMax: number, ipMax: number }} */
     this.calib = {
       origin: null,
@@ -192,7 +194,6 @@ export class Plot {
     this.screenCurves = [];
     this.showScreenCurves = true;
     this.screenCurveColor = '#1d4ed8';
-    this.positiveColor = '#7c3aed';
     this.loadLine = null;
     this.qPoint = null;
     this.swingPoints = [];
@@ -485,8 +486,8 @@ export class Plot {
     for (const curve of this.curves) {
       const pts = curve.points;
       if (!pts.length) continue;
-      const positive = curve.vg > 0;
-      ctx.strokeStyle = positive ? this.positiveColor : this.curveColor;
+      const color = curve.vg > 0 ? POSITIVE_GRID_COLOR : NEGATIVE_GRID_COLOR;
+      ctx.strokeStyle = color;
       this.strokePolyline(pts.map((pt) => this.dataToPx(pt.vp, pt.ip)));
 
       const label = `${curve.vg} V`;
@@ -517,7 +518,7 @@ export class Plot {
 
       const labelPos = this.clampLabel(anchor.x + 5, anchor.y - 5, tw, th, margin);
       this.drawLabel(label, labelPos.x, labelPos.y, {
-        fill: positive ? this.positiveColor : this.curveColor,
+        fill: color,
         font,
       });
     }
@@ -585,7 +586,7 @@ export class Plot {
     if (!this.dissip?.length) return;
     const ctx = this.ctx;
     ctx.save();
-    ctx.strokeStyle = '#a16207';
+    ctx.strokeStyle = PMAX_COLOR;
     ctx.lineWidth = 1.25;
     this.strokePolyline(this.dissip.map((pt) => this.dataToPx(pt.vp, pt.ip)));
     ctx.restore();

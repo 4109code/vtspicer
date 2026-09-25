@@ -120,10 +120,16 @@ function readIpMaxA() {
   return Number.isFinite(ma) && ma > 0 ? ma / 1000 : defaultIpMaxMa(state.type) / 1000;
 }
 
-function applyAxisDefaults() {
-  $('vpMax').value = 400;
-  setIpMaxMa(defaultIpMaxMa(state.type));
+function applyAxisDefaults({ keepMax = false } = {}) {
+  if (!keepMax) {
+    $('vpMax').value = 400;
+    setIpMaxMa(defaultIpMaxMa(state.type));
+  }
   centerLoadLine();
+}
+
+function applyFormulaAxes() {
+  applyAxisDefaults({ keepMax: Boolean(plot.image) && plot.isCalibrated() });
 }
 
 /** Turn saved {vp, ip} points into axis fractions using the scale they were stored against. */
@@ -848,7 +854,7 @@ function switchModel(modelId, { resetParams = true } = {}) {
   hideNotice($('modelNote'));
   rebuildSliders();
   refreshPresetOptions();
-  if (!$('presetSelect').value) applyAxisDefaults();
+  if (!$('presetSelect').value) applyFormulaAxes();
   if (guidePointCount() >= 2) {
     runGuideFit();
   } else {
@@ -1059,7 +1065,7 @@ function bindUi() {
       ...state.params,
     });
     refreshPresetOptions();
-    if (!$('presetSelect').value) applyAxisDefaults();
+    if (!$('presetSelect').value) applyFormulaAxes();
     rebuildSliders();
     updateMultiVisibility();
     scheduleRedraw();

@@ -20,6 +20,8 @@ Power is `Vpp·Ipp/8`. The readout groups bias and heat, Gm / Ra / Mu / Zout / Z
 
 Grid current uses the diode plus RGI, or Koren's child law. Pentodes can show Ip+Ig2, an ultralinear screen tap, and on Koren a KVC screen knee.
 
+Parts of this tool were inspired by Dmitry Nizhegorodsky's Paint_KIT (Triode modeling) and Paint_KIP (Pentode modeling)
+
 ## Equations
 
 - **Koren** — classic softplus / `atan` phenomenological forms ([article](https://www.normankoren.com/Audio/Tubemodspice_article.html)). Author: Norman Koren.

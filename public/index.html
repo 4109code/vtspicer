@@ -15,7 +15,7 @@
       <img class="logo" src="/tube-logo.png" alt="" width="64" height="64" />
       <div>
         <h1>VTSpicer: Vacuum tube modeling</h1>
-        <p class="tag">Match plate curves with equations and export a SPICE <code>.SUBCKT</code></p>
+        <p class="tag">Match plate curves, find load line, export SPICE .SUBCKT</p>
       </div>
     </div>
     <p class="credit">by nfrolov</p>
@@ -72,18 +72,13 @@
       </section>
 
       <section>
-        <h2>Parameters</h2>
-        <p class="hint">Drag a value sideways: near = coarse, away = fine. Shift finer, Alt coarser.
-        </p>
-        <div id="paramSliders"></div>
-      </section>
-
-      <section>
         <h2>Vg guides</h2>
         <div id="drawControls" class="draw-controls">
           <div id="guideLayerRow" class="row">
-            <label class="check"><input type="radio" name="guideLayer" id="guideLayerPlate" value="plate" checked /> Plate (Ip)</label>
-            <label class="check"><input type="radio" name="guideLayer" id="guideLayerScreen" value="screen" /> Screen (Ig2)</label>
+            <label class="check"><input type="radio" name="guideLayer" id="guideLayerPlate" value="plate" checked />
+              Plate (Ip)</label>
+            <label class="check"><input type="radio" name="guideLayer" id="guideLayerScreen" value="screen" /> Screen
+              (Ig2)</label>
           </div>
           <label>Active Vg (V) <input id="drawVg" type="number" value="0" step="0.5" /></label>
           <label class="check"><input type="checkbox" id="drawAutoFit" checked /> Auto-fit after each point</label>
@@ -92,9 +87,17 @@
             <button type="button" id="btnUndoGuide">Undo point</button>
             <button type="button" id="btnClearGuides">Clear guides</button>
           </div>
-          <p id="drawStatus" class="hint">Click the plot to place a few points along each datasheet Vg curve. On a pentode, Plate follows Ip and Screen follows Ig2. Change
+          <p id="drawStatus" class="hint">Click the plot to place a few points along each datasheet Vg curve. On a
+            pentode, Plate follows Ip and Screen follows Ig2. Change
             Active Vg for the next curve, then Fit.</p>
         </div>
+      </section>
+
+      <section>
+        <h2>Parameters</h2>
+        <p class="hint">Drag a value sideways: near = coarse, away = fine. Shift finer, Alt coarser.
+        </p>
+        <div id="paramSliders"></div>
       </section>
     </aside>
 
@@ -108,39 +111,33 @@
     <aside class="panel export">
       <section>
         <h2>Load line</h2>
-        <label class="check load-check"><input type="checkbox" id="showLoadLine" checked /> Show load line <span class="param-hint">Drag the center dot to move the quiescent point</span></label>
+        <label class="check load-check"><input type="checkbox" id="showLoadLine" checked /> Show load line <span
+            class="param-hint">Drag the center dot to move the quiescent point</span></label>
         <div class="load-field">
-          <span class="param-name"><span class="param-key">Rp</span><span class="param-hint">Plate load. Sets the line slope</span></span>
+          <span class="param-name"><span class="param-key">Rp</span><span class="param-hint">Plate load. Sets the line
+              slope</span></span>
           <input id="loadRp" type="number" value="100000" step="1000" />
         </div>
         <div class="load-field">
-          <span class="param-name"><span class="param-key">Vp</span><span class="param-hint">Quiescent plate voltage</span></span>
+          <span class="param-name"><span class="param-key">Vp</span><span class="param-hint">Quiescent plate
+              voltage</span></span>
           <input id="loadVp" type="number" value="250" step="10" />
         </div>
         <div class="load-field" id="loadVgRow">
-          <span class="param-name"><span class="param-key">Vg</span><span class="param-hint">Quiescent grid voltage</span></span>
+          <span class="param-name"><span class="param-key">Vg</span><span class="param-hint">Quiescent grid
+              voltage</span></span>
           <input id="loadVg" type="number" value="-2" step="0.5" />
         </div>
         <div class="load-field" id="loadVinRow">
-          <span class="param-name"><span class="param-key">Vin</span><span class="param-hint">Peak grid swing. Drag an open dot to set it and tilt the line</span></span>
+          <span class="param-name"><span class="param-key">Vin</span><span class="param-hint">Peak grid swing. Drag an
+              open dot to set it and tilt the line</span></span>
           <input id="loadVin" type="number" value="1" step="0.1" />
         </div>
-        <div class="load-field">
-          <span class="param-name"><span class="param-key">Pmax</span><span class="param-hint">Plate dissipation limit, watts</span></span>
-          <input id="loadPmax" type="number" value="1" step="0.1" />
-        </div>
-        <label class="check load-check"><input type="checkbox" id="showPmax" checked /> Dissipation curve <span class="param-hint">Ip = Pmax / Vp</span></label>
-        <div class="load-field" id="loadThdRow">
-          <span class="param-name"><span class="param-key">THD</span><span class="param-hint">Acceptable distortion for Best Q-point, percent</span></span>
-          <input id="loadThd" type="number" value="1" min="0" step="0.1" />
-        </div>
-        <div class="row" id="loadOptRow">
-          <button type="button" id="btnBestLoad" class="primary">Best Q-point</button>
-        </div>
-        <p id="loadOptHint" class="param-hint">Most output power at or below Acceptable THD. Plate heat stays within Pmax</p>
-        <label id="showIgRow" class="check load-check"><input type="checkbox" id="showIg" /> Grid current <span class="param-hint">Ig along each Vg curve</span></label>
+        <label id="showIgRow" class="check load-check"><input type="checkbox" id="showIg" /> Grid current <span
+            class="param-hint">Ig along each Vg curve</span></label>
         <div class="load-field" id="igModeRow">
-          <span class="param-name"><span class="param-key">Ig</span><span class="param-hint">Diode uses RGI. Child law is a power of Vg</span></span>
+          <span class="param-name"><span class="param-key">Ig</span><span class="param-hint">Diode uses RGI. Child law
+              is a power of Vg</span></span>
           <select id="igMode">
             <option value="diode" selected>Diode + RGI</option>
             <option value="child">Child law</option>
@@ -148,32 +145,71 @@
         </div>
         <div id="childLawRow">
           <div class="load-field">
-            <span class="param-name"><span class="param-key">VGOFF</span><span class="param-hint">Ig starts above this grid voltage</span></span>
+            <span class="param-name"><span class="param-key">VGOFF</span><span class="param-hint">Ig starts above this
+                grid voltage</span></span>
             <input id="VGOFF" type="number" value="-0.6" step="0.1" />
           </div>
           <div class="load-field">
-            <span class="param-name"><span class="param-key">IGA</span><span class="param-hint">Child-law scale. Higher raises Ig</span></span>
+            <span class="param-name"><span class="param-key">IGA</span><span class="param-hint">Child-law scale. Higher
+                raises Ig</span></span>
             <input id="IGA" type="number" value="0.001" step="0.001" />
           </div>
           <div class="load-field">
-            <span class="param-name"><span class="param-key">IGB</span><span class="param-hint">Extra scale that falls as Vp rises</span></span>
+            <span class="param-name"><span class="param-key">IGB</span><span class="param-hint">Extra scale that falls
+                as Vp rises</span></span>
             <input id="IGB" type="number" value="0.3" step="0.1" />
           </div>
           <div class="load-field">
-            <span class="param-name"><span class="param-key">IGC</span><span class="param-hint">Vp where the IGB term eases off</span></span>
+            <span class="param-name"><span class="param-key">IGC</span><span class="param-hint">Vp where the IGB term
+                eases off</span></span>
             <input id="IGC" type="number" value="8" step="1" />
           </div>
           <div class="load-field">
-            <span class="param-name"><span class="param-key">IGEX</span><span class="param-hint">Bend. Higher rises faster</span></span>
+            <span class="param-name"><span class="param-key">IGEX</span><span class="param-hint">Bend. Higher rises
+                faster</span></span>
             <input id="IGEX" type="number" value="2" step="0.1" />
           </div>
         </div>
-        <label id="showSumRow" class="check load-check"><input type="checkbox" id="showSum" /> Ip + Ig2 <span class="param-hint">Plate plus screen, screen tied to plate</span></label>
-        <label id="ulRow" class="check load-check"><input type="checkbox" id="ulOn" /> Ultralinear <span class="param-hint">Screen follows the plate through the tap</span></label>
+        <label id="showSumRow" class="check load-check"><input type="checkbox" id="showSum" /> Ip + Ig2 <span
+            class="param-hint">Plate plus screen, screen tied to plate</span></label>
+        <label id="ulRow" class="check load-check"><input type="checkbox" id="ulOn" /> Ultralinear <span
+            class="param-hint">Screen follows the plate through the tap</span></label>
         <div class="load-field" id="ulTapRow">
-          <span class="param-name"><span class="param-key">UL</span><span class="param-hint">Fraction of plate swing added to Vg2</span></span>
+          <span class="param-name"><span class="param-key">UL</span><span class="param-hint">Fraction of plate swing
+              added to Vg2</span></span>
           <input id="ulTap" type="number" value="0.43" min="0" max="1" step="0.01" />
         </div>
+      </section>
+      <section>
+        <h2>Best Q-point</h2>
+        <div class="load-field">
+          <span class="param-name"><span class="param-key">Pmax</span><span class="param-hint">Plate dissipation limit,
+              watts</span></span>
+          <input id="loadPmax" type="number" value="1" step="0.1" />
+        </div>
+        <label class="check load-check"><input type="checkbox" id="showPmax" checked /> Dissipation curve <span
+            class="param-hint">Ip = Pmax / Vp</span></label>
+        <div id="loadOpt" class="load-opt">
+          <div class="grid2">
+            <div class="load-field" id="loadThdRow">
+              <span class="param-name"><span class="param-key">THD</span><span class="param-hint">Acceptable distortion,
+                  percent</span></span>
+              <input id="loadThd" type="number" value="1" min="0" step="0.1" />
+            </div>
+            <div class="load-field" id="loadVcRow">
+              <span class="param-name"><span class="param-key">Vc</span><span class="param-hint">Max supply
+                  voltage</span></span>
+              <input id="loadVc" type="number" value="400" min="0" step="10" />
+            </div>
+          </div>
+          <div class="row" id="loadOptRow">
+            <button type="button" id="btnBestLoad" class="primary">Best Q-point</button>
+          </div>
+          <p id="loadOptHint" class="param-hint">Most output power at or below THD. Plate heat stays within Pmax. Supply
+            stays at or below Vc</p>
+        </div>
+      </section>
+      <section>
         <div id="loadResults" class="load-results"></div>
         <p id="harmHint" class="param-hint harm-hint">H2–H5 from 10% drive up to Vin</p>
         <canvas id="harmPlot" width="280" height="110"></canvas>

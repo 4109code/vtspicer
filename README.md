@@ -1,6 +1,6 @@
 # VTSpicer: Vacuum tube modeling
 
-Match plate curves, set a load line, and export a SPICE .SUBCKT
+Match plate curves, find load line, export SPICE .SUBCKT
 
 ## How to use
 
@@ -16,7 +16,7 @@ Drag the center dot to move the quiescent point, or an open dot to set Vin and t
 
 **Best Q-point** picks the most output power at or below **Acceptable THD** (default 1%), with plate heat within Pmax and both swing peaks inside the axes.
 
-Power is `Vpp·Ipp/8`. The readout groups bias and heat, Gm / Ra / Mu / Zout / Zin, the swing (Vin rms, Vout peak-to-peak, Vout rms, Iout rms, power, efficiency), then THD and H2–H5.
+Power is `Vpp·Ipp/8`. The readout groups bias and heat, Gm / Ra / Mu / Zout / Zin, the swing (Vin rms, Vout peak-to-peak, Vout rms, Iout rms, power), then THD and H2–H5.
 
 Grid current uses the diode plus RGI, or Koren's child law. Pentodes can show Ip+Ig2, an ultralinear screen tap, and on Koren a KVC screen knee.
 

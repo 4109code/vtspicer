@@ -1,7 +1,7 @@
 {
   "name": "vtspicer",
   "version": "1.0.0",
-  "description": "VTSpicer: Vacuum tube modeling — match plate curves and export .SUBCKT",
+  "description": "VTSpicer: Vacuum tube modeling. Match plate curves, find load line, export a SPICE .SUBCKT",
   "type": "module",
   "main": "server.js",
   "scripts": {

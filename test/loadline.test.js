@@ -216,6 +216,17 @@ describe('optimizeLoadLine', () => {
     assert.ok(clipped.some((s) => !(s.vp > 0) || !(s.ip > 0) || s.vp == null));
   });
 
+  it('keeps the implied supply at or below Vc and uses a higher cap for more power', () => {
+    const params = defaultParams('koren', 'triode');
+    const ipAt = (vg, vp, eg2) => plateCurrent('koren', 'triode', vg, vp, eg2, params);
+    const tight = optimizeLoadLine({ ipAt, pmax: 1, thdMax: 5, vpHi: 400, vcMax: 200 });
+    const loose = optimizeLoadLine({ ipAt, pmax: 1, thdMax: 5, vpHi: 400, vcMax: 400 });
+    assert.ok(tight && loose);
+    assert.ok(tight.vc <= 200 * 1.002, `vc=${tight.vc}`);
+    assert.ok(loose.vc <= 400 * 1.002, `vc=${loose.vc}`);
+    assert.ok(loose.pout + 1e-9 >= tight.pout);
+  });
+
   it('stays at or below Acceptable THD and uses a looser limit for more power', () => {
     const params = defaultParams('koren', 'triode');
     const ipAt = (vg, vp, eg2) => plateCurrent('koren', 'triode', vg, vp, eg2, params);

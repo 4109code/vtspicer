@@ -186,6 +186,7 @@ function readLoadUi() {
     vin: Math.max(0, num('loadVin', 1)),
     pmax: Math.max(0, num('loadPmax', 1)),
     thdMax: Math.max(0, num('loadThd', 1)),
+    vcMax: Math.max(0, num('loadVc', 400)),
     showPmax: $('showPmax').checked,
     showIg: $('showIg').checked,
     gridLaw: $('igMode').value === 'child' ? 'child' : 'diode',
@@ -265,10 +266,11 @@ function applyBestLoadLine() {
     ul: isMultiGrid() && load.ulOn ? load.ul : 0,
     pmax: load.pmax,
     thdMax: load.thdMax,
+    vcMax: load.vcMax,
     vpHi: vpMax,
   });
   if (!best) {
-    hint.textContent = 'No point under Pmax and Acceptable THD. Raise one of those limits';
+    hint.textContent = 'No point under Pmax, THD, and Vc. Raise one of those limits';
     return;
   }
   $('showLoadLine').checked = true;
@@ -277,7 +279,7 @@ function applyBestLoadLine() {
   $('loadVg').value = best.vg.toFixed(2);
   $('loadVin').value = best.vin.toFixed(2);
   loadPlaced = true;
-  hint.textContent = 'Most output power at or below Acceptable THD. Plate heat stays within Pmax';
+  hint.textContent = 'Most output power at or below THD. Plate heat stays within Pmax. Supply stays at or below Vc';
   scheduleRedraw();
   persist();
 }
@@ -585,7 +587,6 @@ function updateLoadResults(op, load, diode) {
     rows.push(loadMetric('Vout rms', fmtFix(levels.voutRms, 2, ' V'), 'Sine equivalent of that plate swing'));
     rows.push(loadMetric('Iout rms', fmtFix(levels.ioutRms * 1000, 2, ' mA'), 'Sine equivalent of the plate-current swing'));
     rows.push(loadMetric('Pout', fmtFix(op.pout, 3, ' W'), 'Vout rms times Iout rms'));
-    rows.push(loadMetric('Eff', fmtFix(op.eta * 100, 1, '%'), 'Pout over supply power, plate plus screen'));
     rows.push(loadMetric('THD', fmtFix(op.thd, 2, '%'), 'H2 through H5, combined'));
     rows.push(loadMetric('H2', fmtFix(op.h2, 2, '%'), 'Second harmonic'));
     rows.push(loadMetric('H3', fmtFix(op.h3, 2, '%'), 'Third harmonic'));
@@ -752,9 +753,7 @@ function updateMultiVisibility() {
   $('ulRow').style.display = multi ? '' : 'none';
   $('ulTapRow').style.display = multi && $('ulOn').checked ? '' : 'none';
   $('harmPlot').style.display = diode ? 'none' : '';
-  $('loadOptRow').style.display = diode ? 'none' : '';
-  $('loadThdRow').style.display = diode ? 'none' : '';
-  $('loadOptHint').style.display = diode ? 'none' : '';
+  $('loadOpt').style.display = diode ? 'none' : '';
   if (sliderApi) sliderApi.setMultiGrid(multi);
 }
 
@@ -955,7 +954,7 @@ function restore() {
     for (const [key, id] of Object.entries(map)) {
       if (typeof data.load[key] === 'boolean') $(id).checked = data.load[key];
     }
-    const fields = { rp: 'loadRp', vp: 'loadVp', vg: 'loadVg', vin: 'loadVin', pmax: 'loadPmax', thdMax: 'loadThd', ul: 'ulTap' };
+    const fields = { rp: 'loadRp', vp: 'loadVp', vg: 'loadVg', vin: 'loadVin', pmax: 'loadPmax', thdMax: 'loadThd', vcMax: 'loadVc', ul: 'ulTap' };
     for (const [key, id] of Object.entries(fields)) {
       if (Number.isFinite(data.load[key])) $(id).value = data.load[key];
     }
@@ -1006,6 +1005,7 @@ function bindUi() {
       ...defaultParams(state.modelId, state.type),
       ...state.params,
     });
+    refreshPresetOptions();
     if (!$('presetSelect').value) applyAxisDefaults();
     rebuildSliders();
     updateMultiVisibility();
@@ -1021,7 +1021,7 @@ function bindUi() {
 
   for (const id of [
     'vgList', 'vpMax', 'ipMax', 'eg2', 'vpSteps', 'curveColor', 'imageOpacity',
-    'loadRp', 'loadVp', 'loadVg', 'loadVin', 'loadPmax', 'loadThd', 'ulTap',
+    'loadRp', 'loadVp', 'loadVg', 'loadVin', 'loadPmax', 'loadThd', 'loadVc', 'ulTap',
     ...CHILD_KEYS,
   ]) {
     $(id).addEventListener('input', () => {
@@ -1369,13 +1369,17 @@ function refreshPresetOptions() {
   for (const p of state.presets) {
     const modelId = p.model || 'koren';
     if (modelId !== state.modelId) continue;
+    if (normalizeType(p.type) !== state.type) continue;
     const opt = document.createElement('option');
     opt.value = p.id;
-    opt.textContent = `${p.name} (${p.type})`;
+    opt.textContent = p.name;
     sel.appendChild(opt);
   }
   if ([...sel.options].some((o) => o.value === current)) sel.value = current;
-  else sel.value = '';
+  else {
+    sel.value = '';
+    if (current) $('modelNote').hidden = true;
+  }
 }
 
 async function loadPresets() {

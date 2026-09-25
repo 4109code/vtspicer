@@ -87,8 +87,28 @@ html, body {
   border-left: 1px solid var(--border);
 }
 
+.load-opt {
+  margin-top: 0.35rem;
+}
+
+.load-opt .param-name {
+  flex-wrap: wrap;
+  align-items: flex-start;
+  row-gap: 0.1rem;
+  min-height: 2.7rem;
+}
+
+.load-opt .param-hint {
+  flex: 1 0 100%;
+}
+
+.load-opt .grid2 {
+  align-items: start;
+}
+
 .load-field {
   margin-bottom: 0.45rem;
+  font-size: 0.75rem;
 }
 
 .load-field input,
@@ -175,7 +195,7 @@ h2 {
 
 label {
   display: block;
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   margin-bottom: 0.45rem;
   color: var(--text);
 }
@@ -192,12 +212,13 @@ select,
 textarea {
   width: 100%;
   margin-top: 0.2rem;
-  padding: 0.35rem 0.45rem;
+  padding: 0.2rem 0.35rem;
   border: 1px solid var(--border);
   border-radius: 4px;
   background: #16181a;
   color: var(--text);
   font: inherit;
+  font-size: 0.75rem;
 }
 
 input[type="range"] {
@@ -242,7 +263,7 @@ input[type="file"] {
 
 .param-row input[type="number"] {
   margin: 0;
-  padding: 0.2rem;
+  padding: 0.2rem 0.35rem;
   cursor: ew-resize;
   user-select: none;
 }
@@ -250,7 +271,7 @@ input[type="file"] {
 .param-row select {
   margin: 0;
   grid-column: 1 / -1;
-  padding: 0.2rem;
+  padding: 0.2rem 0.35rem;
 }
 
 .param-row input[type="number"].scrubbing {
@@ -277,9 +298,9 @@ button {
   background: #2c3238;
   color: var(--text);
   border-radius: 4px;
-  padding: 0.35rem 0.65rem;
+  padding: 0.3rem 0.55rem;
   font: inherit;
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   cursor: pointer;
 }
 
@@ -308,7 +329,7 @@ button.danger:hover {
 }
 
 .hint {
-  font-size: 0.72rem;
+  font-size: 0.68rem;
   color: var(--muted);
   line-height: 1.35;
 }

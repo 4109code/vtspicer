@@ -41,7 +41,7 @@ import {
   optimizeLoadLine,
 } from '/lib/loadline.js';
 import { CHILD_DEFAULTS, CHILD_KEYS, PIN_ORDER, childLawIg, gridCurrent } from '/lib/models/math.js';
-import { stageParts } from '/lib/stage.js';
+import { stageParts, stageCorners } from '/lib/stage.js';
 
 const STORAGE_KEY = 'koren-tube-modeler-v2';
 
@@ -843,7 +843,15 @@ function updateStageParts(op, load, diode) {
   }
   const fLow = Math.max(1, Number($('partF').value) || 10);
   const series = $('partSeries').value === 'E12' ? 'E12' : 'E24';
-  const rows = stageParts(load, op, { series, fLow }).map((part) => {
+  const parts = stageParts(load, op, { series, fLow });
+  const sourceR = Math.max(0, Number($('partSource').value) || 0);
+  const corners = stageCorners(load, op, parts, {
+    sourceR,
+    ccgPf: state.params.CCG,
+    cgpPf: state.params.CGP,
+    fLow,
+  });
+  const rows = parts.map((part) => {
     let value = '—';
     if (part.kind === 'V') value = fmtFix(part.value, 1, ' V');
     else if (part.kind === 'C') value = fmtFarad(part.snapped);
@@ -858,6 +866,14 @@ function updateStageParts(op, load, diode) {
           : '';
     return loadMetric(part.key, value, hint);
   });
+  const hz = (f) => (f == null || !Number.isFinite(f) ? null : f >= 1000 ? `${(f / 1000).toFixed(2)} kHz` : `${f.toFixed(1)} Hz`);
+  if (hz(corners.fCk)) rows.push(loadMetric('f Ck', hz(corners.fCk), 'Cathode bypass corner with the snapped cap'));
+  if (hz(corners.fCoupling)) rows.push(loadMetric('f Cc', hz(corners.fCoupling), 'Coupling-cap corner with the snapped cap'));
+  if (hz(corners.fHigh)) rows.push(loadMetric('f hi', hz(corners.fHigh), 'Miller corner from the source resistance'));
+  if (corners.lp > 0) {
+    const lp = corners.lp >= 1 ? `${corners.lp.toFixed(2)} H` : `${(corners.lp * 1000).toFixed(0)} mH`;
+    rows.push(loadMetric('Lp', lp, 'Primary inductance for the low corner'));
+  }
   box.replaceChildren(...rows);
 }
 
@@ -1228,6 +1244,7 @@ function writePersist() {
       parts: {
         f: Number($('partF').value) || 10,
         series: $('partSeries').value === 'E12' ? 'E12' : 'E24',
+        source: Number($('partSource').value) || 0,
       },
       guides: state.guides,
       screenGuides: state.screenGuides,
@@ -1289,6 +1306,7 @@ function restore() {
   if (data.parts) {
     if (Number(data.parts.f) > 0) $('partF').value = data.parts.f;
     if (data.parts.series === 'E12' || data.parts.series === 'E24') $('partSeries').value = data.parts.series;
+    if (Number(data.parts.source) > 0) $('partSource').value = data.parts.source;
   }
   if (data.vgList) $('vgList').value = data.vgList;
   if (data.vpMax) $('vpMax').value = data.vpMax;
@@ -1442,6 +1460,10 @@ function bindUi() {
   $('loadZhp').addEventListener('input', () => {
     const z = Number($('loadZhp').value);
     $('loadZhpPreset').value = [32, 80, 300, 600].includes(z) ? String(z) : 'custom';
+  });
+  $('partSource').addEventListener('input', () => {
+    scheduleRedraw();
+    persist();
   });
   $('partF').addEventListener('input', () => {
     scheduleRedraw();

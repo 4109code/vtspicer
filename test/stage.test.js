@@ -1,6 +1,16 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { nearestE, suggestWattage, cathodeBypassCap, couplingCap, stageParts } from '../lib/stage.js';
+import {
+  nearestE,
+  suggestWattage,
+  cathodeBypassCap,
+  couplingCap,
+  stageParts,
+  millerCap,
+  highCorner,
+  primaryInductance,
+  lowCorner,
+} from '../lib/stage.js';
 
 function close(actual, expected, tol = 1e-9) {
   assert.ok(Math.abs(actual - expected) <= tol, `${actual} vs ${expected}`);
@@ -40,5 +50,17 @@ describe('coupling parts', () => {
     assert.ok(parts.some((part) => part.key === 'Ck'));
     const open = stageParts({ ...load, bypassed: false }, op, { fLow: 10 });
     assert.equal(open.some((part) => part.key === 'Ck'), false);
+  });
+
+  it('sets the high corner from Miller capacitance and primary inductance from ra parallel to Zp', () => {
+    const c = millerCap(2.3, 1.7, 50);
+    close(c, (2.3 + 1.7 * 51) * 1e-12);
+    const source = 10000;
+    close(highCorner(source, c), 1 / (2 * Math.PI * source * c));
+    const ra = 2000;
+    const zp = 5000;
+    const seen = 1 / (1 / ra + 1 / zp);
+    close(primaryInductance(ra, zp, 20), seen / (2 * Math.PI * 20));
+    close(lowCorner(couplingCap(100e3, 10), 100e3), 10, 1e-9);
   });
 });

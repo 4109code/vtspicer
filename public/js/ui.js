@@ -10,7 +10,7 @@ import { PASSIVE_KEYS } from '/lib/models/math.js';
 const SLIDER_MAX = 1000;
 
 function decimalsFor(key, lim) {
-  if (key === 'G' || key === 'GLIM' || key === 'K') return 6;
+  if (key === 'K') return 6;
   if (key === 'KP' || (lim && lim.max <= 5)) return 6;
   return 2;
 }

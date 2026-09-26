@@ -3,7 +3,7 @@
  * Plate guides match Ip. Screen guides match Ig2.
  */
 
-import { fitToTargets, getModel, plateCurrent, plateFitKeys, targetCurrent } from '/lib/tube.js';
+import { fitToTargets, getModel, peakOf, plateCurrent, plateFitKeys, targetCurrent } from '/lib/tube.js';
 
 /**
  * @typedef {{ vg: number, points: { vp: number, ip: number }[] }} GuideCurve
@@ -27,14 +27,6 @@ function guidesToTargets(guides, eg2, kind) {
     }
   }
   return targets;
-}
-
-function peakOf(targets) {
-  let peak = 0;
-  for (const t of targets) {
-    if (Number.isFinite(t.ip) && t.ip > peak) peak = t.ip;
-  }
-  return Math.max(peak, 1e-9);
 }
 
 /** Samples of the plate family this fit started from, so a screen-only fit cannot walk Ip off. */
@@ -116,7 +108,6 @@ export function fitParamsToGuides(
 
   const next = fitToTargets(modelId, type, params, [...plate, ...screen, ...holds], {
     iterations: 90,
-    damping: 0.45,
     keys,
   });
   return {

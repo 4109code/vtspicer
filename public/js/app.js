@@ -36,7 +36,7 @@ import {
   smallSignal,
   optimizeLoadLine,
 } from '/lib/loadline.js';
-import { CHILD_DEFAULTS, CHILD_KEYS, childLawIg, gridCurrent } from '/lib/models/math.js';
+import { CHILD_DEFAULTS, CHILD_KEYS, PIN_ORDER, childLawIg, gridCurrent } from '/lib/models/math.js';
 
 const STORAGE_KEY = 'koren-tube-modeler-v2';
 
@@ -219,6 +219,14 @@ function readLoadUi() {
   };
 }
 
+function readEg2() {
+  return Number($('eg2').value) || 300;
+}
+
+function readVpMax() {
+  return Number($('vpMax').value) || 400;
+}
+
 function plateAt(vg, vp, screen) {
   return plateCurrent(state.modelId, state.type, vg, vp, screen, state.params);
 }
@@ -239,7 +247,7 @@ function addFamilies(plate, screen) {
 
 /** Line through the middle of the plot, with the quiescent point on a curve that conducts. */
 function centerLoadLine() {
-  const vpMax = Number($('vpMax').value) || 400;
+  const vpMax = readVpMax();
   const ipMax = readIpMaxA();
   if (!(vpMax > 0) || !(ipMax > 0)) return;
   const midVp = vpMax / 2;
@@ -251,7 +259,7 @@ function centerLoadLine() {
     $('loadRp').value = String(Math.max(1, Math.round(vpMax / ipMax)));
     return;
   }
-  const eg2 = Number($('eg2').value) || 300;
+  const eg2 = readEg2();
   const listed = parseVgList($('vgList').value);
   const vg = listed.length ? Math.max(...listed) : 0;
   $('loadVg').value = String(vg);
@@ -278,8 +286,8 @@ function centerLoadLine() {
 function applyBestLoadLine() {
   if (state.type === 'diode') return;
   const load = readLoadUi();
-  const eg2 = Number($('eg2').value) || 300;
-  const vpMax = Number($('vpMax').value) || 400;
+  const eg2 = readEg2();
+  const vpMax = readVpMax();
   const hint = $('loadOptHint');
   setNotice(hint, 'Searching�');
   const best = optimizeLoadLine({
@@ -309,7 +317,7 @@ function applyBestLoadLine() {
 
 function visibleVin(vp, ip, eg2) {
   const load = readLoadUi();
-  const vpMax = Number($('vpMax').value) || 400;
+  const vpMax = readVpMax();
   let chosen = 2;
   for (const vin of [1, 2, 5, 8, 12]) {
     const samples = swingSamples(plateAt, {
@@ -333,11 +341,11 @@ function visibleVin(vp, ip, eg2) {
 }
 
 function loadPointOnPlot() {
-  const vpMax = Number($('vpMax').value) || 400;
+  const vpMax = readVpMax();
   const ipMax = readIpMaxA();
   const load = readLoadUi();
   if (!(load.vp > vpMax * 0.04 && load.vp < vpMax * 0.96)) return false;
-  const eg2 = Number($('eg2').value) || 300;
+  const eg2 = readEg2();
   const ip = plateAt(state.type === 'diode' ? 0 : load.vg, load.vp, eg2For(load.vp, eg2, load));
   return ip > ipMax * 0.04 && ip < ipMax * 0.96;
 }
@@ -345,7 +353,7 @@ function loadPointOnPlot() {
 function placeLoadCenter(vp, ip) {
   $('loadVp').value = vp.toFixed(1);
   if (state.type === 'diode') return;
-  const eg2 = Number($('eg2').value) || 300;
+  const eg2 = readEg2();
   const screen = eg2For(vp, eg2, readLoadUi());
   let target = Math.max(0, ip);
   let vg = vgAtCurrent(plateAt, vp, target, screen);
@@ -360,7 +368,7 @@ function placeLoadCenter(vp, ip) {
 
 function vinFromPoint(vp, ip) {
   const load = readLoadUi();
-  const eg2 = Number($('eg2').value) || 300;
+  const eg2 = readEg2();
   const screen = eg2For(vp, eg2, load);
   const vg = vgAtCurrent(plateAt, vp, Math.max(0, ip), screen);
   if (vg == null) return null;
@@ -370,7 +378,7 @@ function vinFromPoint(vp, ip) {
 /** Pivot the line around the quiescent point so it passes through this plate point. */
 function tiltLoadLine(vp, ip) {
   const load = readLoadUi();
-  const eg2 = Number($('eg2').value) || 300;
+  const eg2 = readEg2();
   const iq = plateAt(state.type === 'diode' ? 0 : load.vg, load.vp, eg2For(load.vp, eg2, load));
   const den = ip - iq;
   const num = load.vp - vp;
@@ -466,11 +474,11 @@ function redraw() {
   if (state.modelId === 'koren') state.params.gridLaw = load.gridLaw;
   else delete state.params.gridLaw;
 
-  plot.calib.vpMax = Number($('vpMax').value) || 400;
+  plot.calib.vpMax = readVpMax();
   plot.calib.ipMax = readIpMaxA();
   plot.imageOpacity = Number($('imageOpacity').value) / 100;
 
-  const eg2 = Number($('eg2').value) || 300;
+  const eg2 = readEg2();
   const vpSteps = Number($('vpSteps').value) || 120;
   const vpMax = plot.calib.vpMax;
   const ulTap = isMultiGrid() && load.ulOn ? [load.ul, load.vp] : null;
@@ -663,11 +671,13 @@ function drawHarmonics(sweep) {
   });
 }
 
-const PIN_INPUTS = {
-  triode: { P: 'pinP', G: 'pinG', C: 'pinC' },
-  pentode: { P: 'pinP', G1: 'pinG', C: 'pinC', G2: 'pinG2' },
-  diode: { A: 'pinA', K: 'pinK' },
-};
+const PIN_IDS = { P: 'pinP', G: 'pinG', G1: 'pinG', C: 'pinC', G2: 'pinG2', A: 'pinA', K: 'pinK' };
+const PIN_INPUTS = Object.fromEntries(
+  Object.entries(PIN_ORDER).map(([type, roles]) => [
+    type,
+    Object.fromEntries(roles.map((role) => [role, PIN_IDS[role]])),
+  ]),
+);
 
 function readPins() {
   const fields = PIN_INPUTS[state.type] || PIN_INPUTS.triode;
@@ -753,7 +763,7 @@ function updateDrawStatus(extra = '', { error = false } = {}) {
 }
 
 function runGuideFit() {
-  const eg2 = Number($('eg2').value) || 300;
+  const eg2 = readEg2();
   const { params, meta } = fitParamsToGuides(
     state.modelId,
     state.type,
@@ -1388,13 +1398,12 @@ function onPointerMove(evt) {
   let cursor = `Vp=${data.vp.toFixed(1)} V, Ip=${(data.ip * 1000).toFixed(3)} mA`;
   if (state.type !== 'diode' && data.vp > 0 && data.ip >= 0) {
     const load = readLoadUi();
-    const eg2 = Number($('eg2').value) || 300;
+    const eg2 = readEg2();
     const screen = eg2For(data.vp, eg2, load);
-    const ipAt = (vg, vp, eg) => plateCurrent(state.modelId, state.type, vg, vp, eg, state.params);
-    const vg = vgAtCurrent(ipAt, data.vp, data.ip, screen);
+    const vg = vgAtCurrent(plateAt, data.vp, data.ip, screen);
     if (vg != null) {
       const ss = smallSignal({
-        ipAt,
+        ipAt: plateAt,
         vg,
         vp: data.vp,
         eg2: screen,

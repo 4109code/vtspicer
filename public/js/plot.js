@@ -289,12 +289,6 @@ export class Plot {
     };
   }
 
-  /** Volts and amps for an axis fraction, on the same maxima the curves are drawn with. */
-  unitToData(u, v) {
-    const c = this.calib;
-    return { vp: u * c.vpMax, ip: v * c.ipMax };
-  }
-
   plotBox() {
     const { left, right, top, bottom } = this.pad;
     return {
@@ -318,8 +312,27 @@ export class Plot {
   paintBackdrop(ctx) {
     const w = this.canvas.width;
     const h = this.canvas.height;
-    const key = `${w}x${h}|${this.imageOpacity}|${this.image ? 1 : 0}`;
-    if (!this._backdrop || this._backdropKey !== key || this._backdropImage !== this.image) {
+    if (this.image) {
+      const key = `${w}x${h}`;
+      if (!this._sheet || this._sheetKey !== key || this._sheetImage !== this.image) {
+        const off = document.createElement('canvas');
+        off.width = w;
+        off.height = h;
+        off.getContext('2d').drawImage(this.image, 0, 0, w, h);
+        this._sheet = off;
+        this._sheetKey = key;
+        this._sheetImage = this.image;
+      }
+      ctx.fillStyle = '#f4f1ea';
+      ctx.fillRect(0, 0, w, h);
+      ctx.save();
+      ctx.globalAlpha = this.imageOpacity;
+      ctx.drawImage(this._sheet, 0, 0);
+      ctx.restore();
+      return;
+    }
+    const key = `${w}x${h}`;
+    if (!this._backdrop || this._backdropKey !== key) {
       const off = document.createElement('canvas');
       off.width = w;
       off.height = h;
@@ -327,18 +340,10 @@ export class Plot {
       this.ctx = off.getContext('2d');
       this.ctx.fillStyle = '#f4f1ea';
       this.ctx.fillRect(0, 0, w, h);
-      if (this.image) {
-        this.ctx.save();
-        this.ctx.globalAlpha = this.imageOpacity;
-        this.ctx.drawImage(this.image, 0, 0, w, h);
-        this.ctx.restore();
-      } else {
-        this.drawGrid();
-      }
+      this.drawGrid();
       this.ctx = saved;
       this._backdrop = off;
       this._backdropKey = key;
-      this._backdropImage = this.image;
     }
     ctx.drawImage(this._backdrop, 0, 0);
   }
@@ -548,42 +553,38 @@ export class Plot {
     ctx.restore();
   }
 
-  drawSumCurves() {
-    if (!this.sumCurves?.length) return;
+  strokeSeries(series, { color, width = 1.25, dash } = {}) {
     const ctx = this.ctx;
     ctx.save();
-    ctx.strokeStyle = '#0f766e';
-    ctx.lineWidth = 1.25;
-    ctx.setLineDash([6, 3]);
-    for (const curve of this.sumCurves) {
-      if (!curve.points.length) continue;
-      this.strokePolyline(curve.points.map((pt) => this.dataToPx(pt.vp, pt.ip)));
+    ctx.strokeStyle = color;
+    ctx.lineWidth = width;
+    if (dash) ctx.setLineDash(dash);
+    for (const points of series) {
+      if (!points.length) continue;
+      this.strokePolyline(points.map((pt) => this.dataToPx(pt.vp, pt.ip)));
     }
     ctx.restore();
+  }
+
+  drawSumCurves() {
+    if (!this.sumCurves?.length) return;
+    this.strokeSeries(
+      this.sumCurves.map((curve) => curve.points),
+      { color: '#0f766e', dash: [6, 3] },
+    );
   }
 
   drawIgCurves() {
     if (!this.igCurves?.length) return;
-    const ctx = this.ctx;
-    ctx.save();
-    ctx.strokeStyle = '#b45309';
-    ctx.lineWidth = 1.25;
-    ctx.setLineDash([1, 3]);
-    for (const curve of this.igCurves) {
-      if (!curve.points.length) continue;
-      this.strokePolyline(curve.points.map((pt) => this.dataToPx(pt.vp, pt.ip)));
-    }
-    ctx.restore();
+    this.strokeSeries(
+      this.igCurves.map((curve) => curve.points),
+      { color: '#b45309', dash: [1, 3] },
+    );
   }
 
   drawDissipation() {
     if (!this.dissip?.length) return;
-    const ctx = this.ctx;
-    ctx.save();
-    ctx.strokeStyle = PMAX_COLOR;
-    ctx.lineWidth = 1.25;
-    this.strokePolyline(this.dissip.map((pt) => this.dataToPx(pt.vp, pt.ip)));
-    ctx.restore();
+    this.strokeSeries([this.dissip], { color: PMAX_COLOR });
   }
 
   canvasInset(pad) {

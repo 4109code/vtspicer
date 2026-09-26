@@ -59,7 +59,7 @@ function parseModelOption(value) {
 const state = {
   modelId: 'koren',
   type: 'triode',
-  name: '12AX7',
+  name: 'Tube',
   params: defaultParams('koren', 'triode'),
   guides: [],
   screenGuides: [],
@@ -77,6 +77,7 @@ let sliderApi = null;
 let rafPending = false;
 let paintOnly = false;
 let persistTimer = 0;
+let persistEnabled = true;
 let drag = null;
 let hoverGuide = null;
 let skipDrawClick = false;
@@ -894,20 +895,16 @@ function applyPreset(preset) {
   persist();
 }
 
-function resetToFormulaDefaults() {
-  $('presetSelect').value = '';
-  hideNotice($('modelNote'));
-  $('tubeName').value = '';
-  state.name = 'TUBE';
-  state.params = defaultParams(state.modelId, state.type);
-  writeCaps(state.params);
-  applyAxisDefaults();
-  state.guides = [];
-  state.screenGuides = [];
-  rebuildSliders();
-  updateMultiVisibility();
-  scheduleRedraw();
-  persist();
+function resetSavedSession() {
+  persistEnabled = false;
+  clearTimeout(persistTimer);
+  persistTimer = 0;
+  try {
+    localStorage.clear();
+  } catch {
+    /* ignore private mode */
+  }
+  location.reload();
 }
 
 function persist() {
@@ -924,6 +921,7 @@ function flushPersist() {
 
 function writePersist() {
   persistTimer = 0;
+  if (!persistEnabled) return;
   try {
     const payload = {
       modelId: state.modelId,
@@ -1076,7 +1074,7 @@ function bindUi() {
   });
 
   $('tubeName').addEventListener('input', () => {
-    state.name = $('tubeName').value.trim() || 'TUBE';
+    state.name = $('tubeName').value.trim() || 'Tube';
     updateSpice();
     persist();
   });
@@ -1132,8 +1130,8 @@ function bindUi() {
   }
 
   $('btnNewTube').addEventListener('click', () => {
-    if (!confirm('Overwrite the current tube?')) return;
-    resetToFormulaDefaults();
+    if (!confirm('Reset all saved data?')) return;
+    resetSavedSession();
   });
   $('btnBestLoad').addEventListener('click', () => applyBestLoadLine());
 

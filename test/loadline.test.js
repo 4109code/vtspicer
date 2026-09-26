@@ -19,6 +19,7 @@ import {
   followerZout,
   analyzeFollower,
   clipDrive,
+  droppedScreen,
 } from '../lib/loadline.js';
 import {
   plateCurrent,
@@ -109,6 +110,30 @@ describe('stage loads', () => {
     close(sample.ip, iq + (vp - sample.vp) / stage.rac, 1e-4);
     const levels = swingLevels(1, op.vpp, op.ipp);
     close(op.pout, (levels.voutRms ** 2) / 300, 1e-6);
+  });
+});
+
+describe('screen dropper', () => {
+  it('solves Vg2 = Vc − Ig2·Rg2 and moves the screen when the grid swings', () => {
+    const ig2At = (_vg, _vp, eg2) => 2e-5 * Math.max(eg2, 0);
+    close(droppedScreen(ig2At, 0, 200, 300, 1e5), 100, 0.05);
+    const swinging = (vg, _vp, eg2) => Math.max(0, 2e-5 * eg2 + 2e-4 * vg);
+    const ipAt = (vg, _vp, eg2) => Math.max(0, 0.001 * (vg + 2) + eg2 / 1e6);
+    const op = analyzeLoadLine({
+      ipAt,
+      ig2At: swinging,
+      vg: -1,
+      vp: 200,
+      rp: 50000,
+      eg2: 250,
+      rg2: 1e5,
+      purpose: 'preamp',
+      vin: 0.8,
+      vpHi: 800,
+    });
+    assert.ok(Math.abs(op.screen - 250) > 20, `screen=${op.screen}`);
+    const screens = op.samples.map((s) => s.screen);
+    assert.ok(Math.max(...screens) - Math.min(...screens) > 1, `screens=${screens}`);
   });
 });
 

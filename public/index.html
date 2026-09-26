@@ -220,6 +220,12 @@
         </div>
         <label id="showSumRow" class="check load-check"><input type="checkbox" id="showSum" /> Ip + Ig2 <span
             class="param-hint">Plate plus screen, screen tied to plate</span></label>
+        <label id="rg2Row" class="check load-check" hidden><input type="checkbox" id="loadRg2On" /> Screen dropper <span
+            class="param-hint">Resistor from B+ to the screen. Vg2 falls as screen current rises</span></label>
+        <div class="load-field" id="loadRg2Field" hidden>
+          <span class="param-name"><span class="param-key">Rg2</span><span class="param-hint">Screen resistor from the plate supply</span></span>
+          <input id="loadRg2" type="number" value="470000" min="1" step="1000" />
+        </div>
         <label id="ulRow" class="check load-check"><input type="checkbox" id="ulOn" /> Ultralinear <span
             class="param-hint">Screen follows the plate through the tap</span></label>
         <div class="load-field" id="ulTapRow">

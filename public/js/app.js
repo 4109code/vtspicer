@@ -33,6 +33,7 @@ import {
   linesCoincide,
   resolveStageLoad,
   clipDrive,
+  droppedScreen,
   swingSamples,
   VG_SEARCH_HI,
   VG_SEARCH_LO,
@@ -245,6 +246,8 @@ function readLoadUi() {
     rdc: stage.rdc,
     rac: stage.rac,
     zLoad: stage.zLoad,
+    rg2: Math.max(0, num('loadRg2', 470000)),
+    rg2On: Boolean($('loadRg2On')?.checked),
     voutTarget: Math.max(0, num('loadVout', 0)),
     pg2Max: Math.max(0, num('loadPg2', 0)),
     zpFixed: Boolean($('loadZpFixed')?.checked),
@@ -553,9 +556,31 @@ function hitLoadHandle(local) {
   return null;
 }
 
-function eg2For(vp, eg2, load) {
-  if (!isMultiGrid() || !load.ulOn) return eg2;
+function eg2For(vp, eg2, load, vg) {
+  if (load.screenSupply && load.rg2 > 0 && vg != null && isMultiGrid()) {
+    const dropped = droppedScreen(screenAt, vg, vp, load.screenSupply.vc, load.rg2);
+    if (dropped != null) return dropped;
+  }
+  if (!isMultiGrid() || !load.ulOn || load.purpose !== 'output') return eg2;
   return screenVoltage(vp, eg2, load.ul, load.vp);
+}
+
+function withScreenSupply(load) {
+  if (!(isMultiGrid() && load.purpose === 'preamp' && load.rg2On && load.rg2 > 0)) return load;
+  let screen = readEg2();
+  let vc = load.vp;
+  for (let n = 0; n < 8; n++) {
+    const ip = plateAt(load.vg, load.vp, screen);
+    vc = load.vp + load.rdc * Math.max(0, ip);
+    const next = droppedScreen(screenAt, load.vg, load.vp, vc, load.rg2);
+    if (next == null) break;
+    if (Math.abs(next - screen) < 0.05) {
+      screen = next;
+      break;
+    }
+    screen = next;
+  }
+  return { ...load, screenSupply: { vc, eg2: screen } };
 }
 
 function sweepCurves(vgList, vpMax, vpSteps, eg2, load, currentFn) {
@@ -565,7 +590,7 @@ function sweepCurves(vgList, vpMax, vpSteps, eg2, load, currentFn) {
     const points = [];
     for (let i = 0; i < steps; i++) {
       const vp = (vpMax * i) / (steps - 1);
-      points.push({ vp, ip: currentFn(vg, vp, eg2For(vp, eg2, load)) });
+      points.push({ vp, ip: currentFn(vg, vp, eg2For(vp, eg2, load, vg)) });
     }
     curves.push({ vg, points });
   }
@@ -580,7 +605,7 @@ let lastOp = null;
 function redraw() {
   const diode = state.type === 'diode';
   const vgList = diode ? [0] : parseVgList($('vgList').value);
-  const load = readLoadUi();
+  const load = withScreenSupply(readLoadUi());
   if (state.modelId === 'koren') state.params.gridLaw = load.gridLaw;
   else delete state.params.gridLaw;
 
@@ -591,9 +616,10 @@ function redraw() {
   const eg2 = readEg2();
   const vpSteps = Number($('vpSteps').value) || 120;
   const vpMax = plot.calib.vpMax;
-  const ulTap = isMultiGrid() && load.ulOn ? [load.ul, load.vp] : null;
+  const ulTap = isMultiGrid() && load.purpose === 'output' && load.ulOn ? [load.ul, load.vp] : null;
   const nextCurveKey = JSON.stringify([
     state.modelId, state.type, state.params, vgList, vpMax, vpSteps, eg2, ulTap,
+    load.rg2On, load.rg2, load.screenSupply,
     isMultiGrid() && $('showScreenCurves').checked, isMultiGrid() && load.showSum,
     !diode && load.showIg, load.gridLaw, load.showPmax, load.pmax,
   ]);
@@ -643,6 +669,7 @@ function redraw() {
       eta: load.xfmr,
       zLoad: load.zLoad,
       bypassed: load.bypassed,
+      rg2: load.rg2On ? load.rg2 : 0,
       vin: diode ? 0 : load.vin,
       eg2,
       ul: isMultiGrid() && load.ulOn ? load.ul : 0,
@@ -1069,8 +1096,9 @@ function updateMultiVisibility() {
   $('igModeRow').style.display = !diode && koren ? '' : 'none';
   $('childLawRow').style.display = !diode && koren && $('igMode').value === 'child' ? '' : 'none';
   $('showSumRow').style.display = multi ? '' : 'none';
-  $('ulRow').style.display = multi ? '' : 'none';
-  $('ulTapRow').style.display = multi && $('ulOn').checked ? '' : 'none';
+  const outputPentode = multi && !diode && ($('loadPurpose')?.value === 'output');
+  $('ulRow').style.display = outputPentode ? '' : 'none';
+  $('ulTapRow').style.display = outputPentode && $('ulOn').checked ? '' : 'none';
   $('harmPlot').style.display = diode ? 'none' : '';
   $('loadOpt').style.display = diode ? 'none' : '';
   $('pinAWrap').style.display = diode ? '' : 'none';
@@ -1102,6 +1130,8 @@ function syncPurposeFields() {
   show('loadBypassRow', !diode && !(purpose === 'headphone' && $('loadHpTopo')?.value === 'follower'));
   show('loadVoutRow', !diode && purpose === 'preamp');
   show('loadPg2Row', !diode && purpose === 'output' && isMultiGrid());
+  show('rg2Row', !diode && purpose === 'preamp' && isMultiGrid());
+  show('loadRg2Field', !diode && purpose === 'preamp' && isMultiGrid() && $('loadRg2On')?.checked);
   const optHint = $('loadOptHint');
   if (optHint && !diode) {
     optHint.textContent = purpose === 'preamp'
@@ -1327,13 +1357,14 @@ function restore() {
       ulOn: 'ulOn',
       bypassed: 'loadBypass',
       zpFixed: 'loadZpFixed',
+      rg2On: 'loadRg2On',
     };
     for (const [key, id] of Object.entries(map)) {
       if (typeof data.load[key] === 'boolean') $(id).checked = data.load[key];
     }
     const fields = {
       rp: 'loadRp', vp: 'loadVp', vg: 'loadVg', vin: 'loadVin', pmax: 'loadPmax', thdMax: 'loadThd', vcMax: 'loadVc', ul: 'ulTap',
-      zp: 'loadZp', dcr: 'loadDcr', zhp: 'loadZhp', xfmr: 'loadEta',
+      zp: 'loadZp', dcr: 'loadDcr', zhp: 'loadZhp', xfmr: 'loadEta', rg2: 'loadRg2',
     };
     for (const [key, id] of Object.entries(fields)) {
       if (Number.isFinite(data.load[key])) $(id).value = data.load[key];
@@ -1417,7 +1448,7 @@ function bindUi() {
   for (const id of [
     'vgList', 'vpMax', 'ipMax', 'eg2', 'vpSteps', 'imageOpacity',
     'loadRp', 'loadVp', 'loadVg', 'loadVin', 'loadPmax', 'loadThd', 'loadVc', 'ulTap',
-    'loadRg', 'loadZp', 'loadDcr', 'loadZhp', 'loadEta', 'loadVout', 'loadPg2',
+    'loadRg', 'loadZp', 'loadDcr', 'loadZhp', 'loadEta', 'loadVout', 'loadPg2', 'loadRg2',
     ...CHILD_KEYS,
   ]) {
     $(id).addEventListener('input', () => {
@@ -1474,7 +1505,7 @@ function bindUi() {
     persist();
   });
 
-  for (const id of ['showLoadLine', 'showPmax', 'showIg', 'showSum', 'ulOn', 'igMode', 'loadBypass']) {
+  for (const id of ['showLoadLine', 'showPmax', 'showIg', 'showSum', 'ulOn', 'igMode', 'loadBypass', 'loadRg2On']) {
     $(id).addEventListener('change', () => {
       if (id === 'igMode' && $('igMode').value === 'child') {
         state.params = { ...CHILD_DEFAULTS, ...state.params, gridLaw: 'child' };

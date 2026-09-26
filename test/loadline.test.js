@@ -333,6 +333,34 @@ describe('optimizeLoadLine', () => {
     assert.ok(loose.pout + 1e-9 >= tight.pout);
   });
 
+  it('scores a preamp on clean voltage, an output stage on Zp, and headphones on Zhp', () => {
+    const params = defaultParams('koren', 'triode');
+    const ipAt = (vg, vp, eg2) => plateCurrent('koren', 'triode', vg, vp, eg2, params);
+    const loud = optimizeLoadLine({ ipAt, purpose: 'preamp', pmax: 1, thdMax: 5, vpHi: 400 });
+    const easy = optimizeLoadLine({
+      ipAt, purpose: 'preamp', pmax: 1, thdMax: 5, vpHi: 400, voutTarget: 0.2,
+    });
+    assert.ok(loud && easy);
+    assert.ok(loud.thd <= 5.001 && easy.voutRms >= 0.2);
+    assert.ok(easy.iq < loud.iq, `easy ${easy.iq} loud ${loud.iq}`);
+
+    const output = optimizeLoadLine({
+      ipAt, purpose: 'output', zp: 5000, dcr: 200, eta: 0.85, pmax: 1, thdMax: 5, vpHi: 400,
+    });
+    assert.ok(output);
+    assert.equal(output.rp, 5000);
+    assert.ok(output.thd <= 5.001 && output.pout > 0);
+
+    const phones = optimizeLoadLine({
+      ipAt, purpose: 'headphone', zhp: 300, pmax: 1, thdMax: 8, vpHi: 400,
+    });
+    const follower = optimizeLoadLine({
+      ipAt, purpose: 'headphone', topology: 'follower', zhp: 300, pmax: 1, thdMax: 8, vpHi: 400,
+    });
+    assert.ok(phones && phones.pout > 0 && phones.thd <= 8.001);
+    assert.ok(follower && follower.pout > 0 && follower.thd <= 8.001);
+  });
+
   it('stays at or below Acceptable THD and uses a looser limit for more power', () => {
     const params = defaultParams('koren', 'triode');
     const ipAt = (vg, vp, eg2) => plateCurrent('koren', 'triode', vg, vp, eg2, params);

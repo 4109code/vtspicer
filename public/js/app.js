@@ -244,6 +244,9 @@ function readLoadUi() {
     rdc: stage.rdc,
     rac: stage.rac,
     zLoad: stage.zLoad,
+    voutTarget: Math.max(0, num('loadVout', 0)),
+    pg2Max: Math.max(0, num('loadPg2', 0)),
+    zpFixed: Boolean($('loadZpFixed')?.checked),
   };
 }
 
@@ -327,6 +330,16 @@ function applyBestLoadLine() {
     thdMax: load.thdMax,
     vcMax: load.vcMax,
     vpHi: vpMax,
+    purpose: load.purpose,
+    topology: load.topology,
+    rg: load.rg,
+    dcr: load.dcr,
+    zp: $('loadZpFixed')?.checked ? load.zp : 0,
+    zhp: load.zhp,
+    eta: load.xfmr,
+    pg2Max: Math.max(0, Number($('loadPg2').value) || 0),
+    voutTarget: Math.max(0, Number($('loadVout').value) || 0),
+    bypassed: load.bypassed,
   });
   if (!best) {
     setNotice(hint, 'No point under Pmax, THD, and Vc. Raise one of those limits', { error: true });
@@ -334,12 +347,17 @@ function applyBestLoadLine() {
   }
   $('showLoadLine').checked = true;
   if (load.purpose === 'output') $('loadZp').value = String(Math.max(1, Math.round(best.rp)));
-  else $('loadRp').value = String(Math.max(1, Math.round(best.rp)));
+  else if (load.topology !== 'follower') $('loadRp').value = String(Math.max(1, Math.round(best.rp)));
   $('loadVp').value = best.vp.toFixed(1);
   $('loadVg').value = best.vg.toFixed(2);
   $('loadVin').value = best.vin.toFixed(2);
   loadPlaced = true;
-  setNotice(hint, 'Most output power at or below THD. Plate heat stays within Pmax. Supply stays at or below Vc');
+  const found = load.purpose === 'preamp'
+    ? 'Largest clean output at or below THD. A Vout target then prefers less idle current'
+    : load.purpose === 'headphone'
+      ? 'Most power in the headphones at or below THD'
+      : 'Most power into Zp at or below THD';
+  setNotice(hint, `${found}. Plate heat stays within Pmax. Supply stays at or below Vc`);
   scheduleRedraw();
   persist();
 }
@@ -1036,6 +1054,16 @@ function syncPurposeFields() {
   show('loadZhpRow', !diode && purpose === 'headphone');
   show('loadHpTopoRow', !diode && purpose === 'headphone');
   show('loadBypassRow', !diode && !(purpose === 'headphone' && $('loadHpTopo')?.value === 'follower'));
+  show('loadVoutRow', !diode && purpose === 'preamp');
+  show('loadPg2Row', !diode && purpose === 'output' && isMultiGrid());
+  const optHint = $('loadOptHint');
+  if (optHint && !diode) {
+    optHint.textContent = purpose === 'preamp'
+      ? 'Largest clean output at or below THD. A Vout target then prefers less idle current. Plate heat stays within Pmax'
+      : purpose === 'headphone'
+        ? 'Most power in the headphones at or below THD. Plate heat stays within Pmax'
+        : 'Most power into Zp at or below THD. Plate heat stays within Pmax. Supply stays at or below Vc';
+  }
   show('loadRpRow', diode || (purpose !== 'output' && !(purpose === 'headphone' && $('loadHpTopo')?.value === 'follower')));
   if ($('loadZhpHint')) {
     $('loadZhpHint').textContent = $('loadHpTopo')?.value === 'follower'
@@ -1250,6 +1278,7 @@ function restore() {
       showSum: 'showSum',
       ulOn: 'ulOn',
       bypassed: 'loadBypass',
+      zpFixed: 'loadZpFixed',
     };
     for (const [key, id] of Object.entries(map)) {
       if (typeof data.load[key] === 'boolean') $(id).checked = data.load[key];
@@ -1271,6 +1300,8 @@ function restore() {
       $('loadHpTopo').value = data.load.topology;
     }
     if (data.load.rg > 0) $('loadRg').value = data.load.rg;
+    if (data.load.voutTarget > 0) $('loadVout').value = data.load.voutTarget;
+    if (data.load.pg2Max > 0) $('loadPg2').value = data.load.pg2Max;
     const zhp = Number($('loadZhp').value);
     $('loadZhpPreset').value = [32, 80, 300, 600].includes(zhp) ? String(zhp) : 'custom';
     if (data.load.zspk === 4 || data.load.zspk === 8 || data.load.zspk === 16) {
@@ -1338,7 +1369,7 @@ function bindUi() {
   for (const id of [
     'vgList', 'vpMax', 'ipMax', 'eg2', 'vpSteps', 'imageOpacity',
     'loadRp', 'loadVp', 'loadVg', 'loadVin', 'loadPmax', 'loadThd', 'loadVc', 'ulTap',
-    'loadRg', 'loadZp', 'loadDcr', 'loadZhp', 'loadEta',
+    'loadRg', 'loadZp', 'loadDcr', 'loadZhp', 'loadEta', 'loadVout', 'loadPg2',
     ...CHILD_KEYS,
   ]) {
     $(id).addEventListener('input', () => {

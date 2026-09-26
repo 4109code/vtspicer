@@ -18,6 +18,7 @@ import {
   followerGain,
   followerZout,
   analyzeFollower,
+  clipDrive,
 } from '../lib/loadline.js';
 import {
   plateCurrent,
@@ -108,6 +109,18 @@ describe('stage loads', () => {
     close(sample.ip, iq + (vp - sample.vp) / stage.rac, 1e-4);
     const levels = swingLevels(1, op.vpp, op.ipp);
     close(op.pout, (levels.voutRms ** 2) / 300, 1e-6);
+  });
+});
+
+describe('clipping wall', () => {
+  it('names the grid when a steep load reaches 0 V before cutoff', () => {
+    const ipAt = (vg, vp) => Math.max(0, 0.003 * (vg + 8) + vp / 8000);
+    const vg = -2;
+    const vp = 120;
+    const iq = ipAt(vg, vp);
+    const clip = clipDrive({ ipAt, vg, vp, iq, rac: 800, pmax: 50, vpHi: 400 });
+    assert.equal(clip.wall, 'grid');
+    assert.ok(Math.abs(clip.vin - 2) < 0.25, `vin=${clip.vin}`);
   });
 });
 

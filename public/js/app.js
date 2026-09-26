@@ -32,6 +32,7 @@ import {
   lineEnds,
   linesCoincide,
   resolveStageLoad,
+  clipDrive,
   swingSamples,
   VG_SEARCH_HI,
   VG_SEARCH_LO,
@@ -784,6 +785,35 @@ function updateLoadResults(op, load, diode) {
         ? 'Vout rms squared over the headphone impedance'
         : 'Vout rms times Iout rms';
     rows.push(loadMetric('Pout', fmtFix(op.pout, 3, ' W'), poutHint));
+    const clip = clipDrive({
+      ipAt: plateAt,
+      vg: load.vg,
+      vp: load.vp,
+      iq: op.ip,
+      rac: op.rac,
+      eg2: readEg2(),
+      ul: isMultiGrid() && load.ulOn ? load.ul : 0,
+      rk: op.rk || 0,
+      bypassed: load.topology === 'follower' ? false : load.bypassed,
+      pmax: load.pmax,
+      zhp: load.purpose === 'headphone' ? load.zhp : 0,
+      purpose: load.purpose,
+      topology: load.topology,
+      vpHi: Math.max(readVpMax() * 5, load.vp * 4, 2000),
+    });
+    const clipName = {
+      cutoff: 'Cutoff',
+      grid: 'Grid at 0 V',
+      knee: 'Knee',
+      pmax: 'Plate heat',
+      current: 'Headphone current',
+      none: 'None in range',
+    }[clip.wall] || clip.wall;
+    rows.push(loadMetric(
+      'Clip',
+      clip.vin == null ? clipName : `${clipName} at ${clip.vin.toFixed(2)} V`,
+      'First limit the swing reaches',
+    ));
     rows.push(loadMetric('THD', fmtFix(op.thd, 2, '%'), 'H2 through H5, combined'));
     rows.push(loadMetric('H2', fmtFix(op.h2, 2, '%'), 'Second harmonic'));
     rows.push(loadMetric('H3', fmtFix(op.h3, 2, '%'), 'Third harmonic'));

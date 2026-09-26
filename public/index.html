@@ -289,6 +289,11 @@
                   voltage</span></span>
               <input id="loadVc" type="number" value="400" min="0" step="10" />
             </div>
+            <div class="load-field" id="loadVgMaxRow">
+              <span class="param-name"><span class="param-key">Vgmax</span><span class="param-hint">Max grid voltage on
+                  the swing. Positive allows grid drive</span></span>
+              <input id="loadVgMax" type="number" value="0" step="0.1" />
+            </div>
             <div class="load-field" id="loadVoutRow">
               <span class="param-name"><span class="param-key">Vout</span><span class="param-hint">Target clean rms output. Blank searches for the most</span></span>
               <input id="loadVout" type="number" min="0" step="0.1" placeholder="max" />
@@ -302,7 +307,7 @@
             <button type="button" id="btnBestLoad" class="primary">Find Q-point</button>
           </div>
           <p id="loadOptHint" class="param-hint">Most output power at or below THD. Plate heat stays within Pmax. Supply
-            stays at or below Vc</p>
+            stays at or below Vc. Grid stays at or below Vgmax</p>
         </div>
         <input type="checkbox" id="loadStrap" hidden />
         <div id="connRow" hidden>

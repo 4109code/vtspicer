@@ -232,6 +232,7 @@ function readLoadUi() {
     pmax: Math.max(0, num('loadPmax', 1)),
     thdMax: Math.max(0, num('loadThd', 1)),
     vcMax: Math.max(0, num('loadVc', 400)),
+    vgMax: num('loadVgMax', 0),
     showPmax: $('showPmax').checked,
     showIg: $('showIg').checked,
     gridLaw: $('igMode').value === 'child' ? 'child' : 'diode',
@@ -350,9 +351,10 @@ function applyBestLoadLine() {
     pg2Max: Math.max(0, Number($('loadPg2').value) || 0),
     voutTarget: Math.max(0, Number($('loadVout').value) || 0),
     bypassed: load.bypassed,
+    vgMax: load.vgMax,
   });
   if (!best) {
-    setNotice(hint, 'No point under Pmax, THD, and Vc. Raise one of those limits', { error: true });
+    setNotice(hint, 'No point under Pmax, THD, Vc, and Vgmax. Raise one of those limits', { error: true });
     return;
   }
   $('showLoadLine').checked = true;
@@ -367,7 +369,7 @@ function applyBestLoadLine() {
     : load.purpose === 'headphone'
       ? 'Most power in the headphones at or below THD'
       : 'Most power into Zp at or below THD';
-  setNotice(hint, `${found}. Plate heat stays within Pmax. Supply stays at or below Vc`);
+  setNotice(hint, `${found}. Plate heat stays within Pmax. Supply stays at or below Vc. Grid stays at or below Vgmax`);
   scheduleRedraw();
   persist();
 }
@@ -1207,10 +1209,10 @@ function syncPurposeFields() {
   const optHint = $('loadOptHint');
   if (optHint && !diode) {
     optHint.textContent = purpose === 'preamp'
-      ? 'Largest clean output at or below THD. A Vout target then prefers less idle current. Plate heat stays within Pmax'
+      ? 'Largest clean output at or below THD. A Vout target then prefers less idle current. Plate heat stays within Pmax. Grid stays at or below Vgmax'
       : purpose === 'headphone'
-        ? 'Most power in the headphones at or below THD. Plate heat stays within Pmax'
-        : 'Most power into Zp at or below THD. Plate heat stays within Pmax. Supply stays at or below Vc';
+        ? 'Most power in the headphones at or below THD. Plate heat stays within Pmax. Grid stays at or below Vgmax'
+        : 'Most power into Zp at or below THD. Plate heat stays within Pmax. Supply stays at or below Vc. Grid stays at or below Vgmax';
   }
   const choke = purpose === 'preamp' && $('loadPlate')?.value === 'choke';
   show('loadPlateRow', !diode && purpose === 'preamp');
@@ -1439,7 +1441,7 @@ function restore() {
       if (typeof data.load[key] === 'boolean') $(id).checked = data.load[key];
     }
     const fields = {
-      rp: 'loadRp', vp: 'loadVp', vg: 'loadVg', vin: 'loadVin', pmax: 'loadPmax', thdMax: 'loadThd', vcMax: 'loadVc', ul: 'ulTap',
+      rp: 'loadRp', vp: 'loadVp', vg: 'loadVg', vin: 'loadVin', pmax: 'loadPmax', thdMax: 'loadThd', vcMax: 'loadVc', vgMax: 'loadVgMax', ul: 'ulTap',
       zp: 'loadZp', dcr: 'loadDcr', zhp: 'loadZhp', xfmr: 'loadEta', rg2: 'loadRg2',
     };
     for (const [key, id] of Object.entries(fields)) {
@@ -1526,7 +1528,7 @@ function bindUi() {
 
   for (const id of [
     'vgList', 'vpMax', 'ipMax', 'eg2', 'vpSteps', 'imageOpacity',
-    'loadRp', 'loadVp', 'loadVg', 'loadVin', 'loadPmax', 'loadThd', 'loadVc', 'ulTap',
+    'loadRp', 'loadVp', 'loadVg', 'loadVin', 'loadPmax', 'loadThd', 'loadVc', 'loadVgMax', 'ulTap',
     'loadRg', 'loadZp', 'loadDcr', 'loadZhp', 'loadEta', 'loadVout', 'loadPg2', 'loadRg2',
     ...CHILD_KEYS,
   ]) {

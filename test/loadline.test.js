@@ -478,6 +478,19 @@ describe('optimizeLoadLine', () => {
     assert.ok(follower && follower.pout > 0 && follower.thd <= 8.001);
   });
 
+  it('holds the swing peak to Vgmax and allows that peak above zero', () => {
+    const ipAt = (vg, vp) => Math.max(0, 1e-4 * (vp + 50 * (vg + 8)));
+    const open = optimizeLoadLine({ ipAt, pmax: 4, thdMax: 8, vpHi: 350, vgMax: 0 });
+    const tight = optimizeLoadLine({ ipAt, pmax: 4, thdMax: 8, vpHi: 350, vgMax: -4 });
+    const driven = optimizeLoadLine({ ipAt, pmax: 4, thdMax: 8, vpHi: 350, vgMax: 3 });
+    assert.ok(open && tight && driven);
+    assert.ok(open.vg + open.vin <= 1e-6, `open peak ${open.vg + open.vin}`);
+    assert.ok(tight.vg + tight.vin <= -4 + 1e-6, `tight peak ${tight.vg + tight.vin}`);
+    assert.ok(tight.pout < open.pout, `tight ${tight.pout} open ${open.pout}`);
+    assert.ok(driven.vg + driven.vin > 0, `driven peak ${driven.vg + driven.vin}`);
+    assert.ok(driven.vg + driven.vin <= 3 + 1e-6, `driven peak ${driven.vg + driven.vin}`);
+  });
+
   it('stays at or below Acceptable THD and uses a looser limit for more power', () => {
     const params = defaultParams('koren', 'triode');
     const ipAt = (vg, vp, eg2) => plateCurrent('koren', 'triode', vg, vp, eg2, params);

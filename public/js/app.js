@@ -214,6 +214,7 @@ function readLoadUi() {
     zp: Math.max(0, num('loadZp', 5000)),
     zhp: Math.max(0, num('loadZhp', 300)),
     eta: Math.min(1, Math.max(0, num('loadEta', 1))),
+    topology: $('loadHpTopo')?.value === 'follower' ? 'follower' : 'plate',
   });
   return {
     show: $('showLoadLine').checked,
@@ -235,6 +236,7 @@ function readLoadUi() {
     zp: Math.max(0, num('loadZp', 5000)),
     dcr: Math.max(0, num('loadDcr', 200)),
     zhp: Math.max(0, num('loadZhp', 300)),
+    topology: stage.topology,
     xfmr: stage.eta,
     zspk: [4, 8, 16].includes(num('loadZspk', 8)) ? num('loadZspk', 8) : 8,
     rdc: stage.rdc,
@@ -616,6 +618,7 @@ function redraw() {
       rdc: load.rdc,
       rac: load.rac,
       purpose: load.purpose,
+      topology: load.topology,
       eta: load.xfmr,
       zLoad: load.zLoad,
       vin: diode ? 0 : load.vin,
@@ -631,13 +634,21 @@ function redraw() {
     updateLoadResults(op, load, diode);
     drawHarmonics(op.sweep);
   }
-  const acEnds = load.show && op.rac > 0 ? lineEnds(load.vp, op.ip, op.rac) : null;
-  const dcEnds = load.show && op.rdc > 0 ? lineEnds(load.vp, op.ip, op.rdc) : null;
-  const split = acEnds && dcEnds && !linesCoincide(op.rdc, op.rac);
-  plot.dcLine = split ? dcEnds : null;
-  plot.loadLine = load.show ? (acEnds || dcEnds) : null;
-  plot.qPoint = load.show ? { vp: load.vp, ip: op.ip } : null;
   const ipMax = plot.calib.ipMax;
+  if (load.show && load.topology === 'follower') {
+    plot.dcLine = null;
+    plot.loadLine = [
+      { vp: load.vp, ip: 0 },
+      { vp: load.vp, ip: Math.max(ipMax, op.ip) },
+    ];
+  } else {
+    const acEnds = load.show && op.rac > 0 && Number.isFinite(op.rac) ? lineEnds(load.vp, op.ip, op.rac) : null;
+    const dcEnds = load.show && op.rdc > 0 && Number.isFinite(op.rdc) ? lineEnds(load.vp, op.ip, op.rdc) : null;
+    const split = acEnds && dcEnds && !linesCoincide(op.rdc, op.rac);
+    plot.dcLine = split ? dcEnds : null;
+    plot.loadLine = load.show ? (acEnds || dcEnds) : null;
+  }
+  plot.qPoint = load.show ? { vp: load.vp, ip: op.ip } : null;
   const ends = load.show && !diode && load.vin > 0 ? [op.samples?.[0], op.samples?.[6]] : [];
   plot.swingPoints = ends
     .map((pt, i) => swingMarker(pt, i === 0 ? 'low' : 'high', load, op.ip, vpMax, ipMax))
@@ -710,19 +721,34 @@ function updateLoadResults(op, load, diode) {
     rows.push(loadMetric('Gm', fmtFix(op.gm == null ? null : op.gm * 1000, 2, ' mA/V'), 'How Ip moves with Vg'));
     rows.push(loadMetric('Ra', fmtOhm(op.ra), 'Plate resistance. How Ip moves with Vp'));
     rows.push(loadMetric('Mu', fmtFix(op.mu, 1), 'Gain. Gm times ra'));
-    rows.push(loadMetric('Av', fmtFix(op.av, 2), 'Voltage gain into the AC load'));
-    if (!linesCoincide(op.rdc, op.rac)) {
+    const follower = load.topology === 'follower';
+    rows.push(loadMetric(
+      'Av',
+      fmtFix(op.av, 2),
+      follower ? 'Cathode gain into Rk parallel to the phones' : 'Voltage gain into the AC load',
+    ));
+    if (!follower && !linesCoincide(op.rdc, op.rac)) {
       rows.push(loadMetric('Rdc', fmtOhm(op.rdc), 'DC load through the supply'));
       rows.push(loadMetric('Rac', fmtOhm(op.rac), 'AC load the swing follows'));
     }
     if (load.purpose === 'output' && load.zp > 0 && load.zspk > 0) {
       rows.push(loadMetric('N', fmtFix(Math.sqrt(load.zp / load.zspk), 2), 'Primary to speaker turns ratio'));
     }
-    const zoutHint = load.purpose === 'output' ? 'Plate resistance at the primary' : 'Rp in parallel with ra';
+    const zoutHint = load.topology === 'follower'
+      ? 'Rk in parallel with ra over mu plus one'
+      : load.purpose === 'output'
+        ? 'Plate resistance at the primary'
+        : 'Rp in parallel with ra';
     rows.push(loadMetric('Zout', fmtOhm(op.zout), zoutHint));
     rows.push(loadMetric('Zin', fmtOhm(op.zin), 'Grid impedance at 10 kHz'));
     rows.push(loadMetric('Vin rms', fmtFix(levels.vinRms, 2, ' V'), 'Peak grid swing over ?2'));
-    rows.push(loadMetric('Vout pp', fmtFix(levels.voutPp, 1, ' V'), 'Plate voltage from one swing end to the other'));
+    rows.push(loadMetric(
+      'Vout pp',
+      fmtFix(levels.voutPp, 1, ' V'),
+      load.topology === 'follower'
+        ? 'Cathode voltage across the phones, peak to peak'
+        : 'Plate voltage from one swing end to the other',
+    ));
     rows.push(loadMetric('Vout rms', fmtFix(levels.voutRms, 2, ' V'), 'Sine equivalent of that plate swing'));
     rows.push(loadMetric('Iout rms', fmtFix(levels.ioutRms * 1000, 2, ' mA'), 'Sine equivalent of the plate-current swing'));
     const poutHint = load.purpose === 'output'
@@ -941,13 +967,19 @@ function syncPurposeFields() {
     if (el) el.hidden = !on;
   };
   show('loadPurposeRow', !diode);
-  show('loadRpRow', !diode ? purpose !== 'output' : true);
   show('loadRgRow', !diode && purpose === 'preamp');
   show('loadZpRow', !diode && purpose === 'output');
   show('loadDcrRow', !diode && purpose === 'output');
   show('loadZspkRow', !diode && purpose === 'output');
   show('loadEtaRow', !diode && purpose === 'output');
   show('loadZhpRow', !diode && purpose === 'headphone');
+  show('loadHpTopoRow', !diode && purpose === 'headphone');
+  show('loadRpRow', diode || (purpose !== 'output' && !(purpose === 'headphone' && $('loadHpTopo')?.value === 'follower')));
+  if ($('loadZhpHint')) {
+    $('loadZhpHint').textContent = $('loadHpTopo')?.value === 'follower'
+      ? 'Headphone impedance across the cathode'
+      : 'Headphone impedance. Parallels Rp on the AC line';
+  }
   if ($('loadRpHint')) {
     $('loadRpHint').textContent = purpose === 'headphone'
       ? 'Plate resistor. Sets the DC line'
@@ -1164,7 +1196,12 @@ function restore() {
     if (data.load.purpose === 'output' || data.load.purpose === 'headphone' || data.load.purpose === 'preamp') {
       $('loadPurpose').value = data.load.purpose;
     }
+    if (data.load.topology === 'follower' || data.load.topology === 'plate') {
+      $('loadHpTopo').value = data.load.topology;
+    }
     if (data.load.rg > 0) $('loadRg').value = data.load.rg;
+    const zhp = Number($('loadZhp').value);
+    $('loadZhpPreset').value = [32, 80, 300, 600].includes(zhp) ? String(zhp) : 'custom';
     if (data.load.zspk === 4 || data.load.zspk === 8 || data.load.zspk === 16) {
       $('loadZspk').value = String(data.load.zspk);
     }
@@ -1258,6 +1295,21 @@ function bindUi() {
   $('loadZspk').addEventListener('change', () => {
     scheduleRedraw();
     persist();
+  });
+  $('loadHpTopo').addEventListener('change', () => {
+    syncPurposeFields();
+    scheduleRedraw();
+    persist();
+  });
+  $('loadZhpPreset').addEventListener('change', () => {
+    const preset = $('loadZhpPreset').value;
+    if (preset !== 'custom') $('loadZhp').value = preset;
+    scheduleRedraw();
+    persist();
+  });
+  $('loadZhp').addEventListener('input', () => {
+    const z = Number($('loadZhp').value);
+    $('loadZhpPreset').value = [32, 80, 300, 600].includes(z) ? String(z) : 'custom';
   });
 
   for (const id of ['showLoadLine', 'showPmax', 'showIg', 'showSum', 'ulOn', 'igMode']) {
@@ -1582,6 +1634,9 @@ function onPointerMove(evt) {
       if (!(point.vp > 0)) return;
       const vin = vinFromPoint(point.vp, Math.max(0, point.ip));
       if (vin != null) $('loadVin').value = vin.toFixed(2);
+    } else if (drag.kind === 'ac' && readLoadUi().topology === 'follower') {
+      if (!(data.vp > 0)) return;
+      $('loadVp').value = data.vp.toFixed(1);
     } else {
       if (!(data.vp > 0) || data.ip < 0) return;
       const load = readLoadUi();

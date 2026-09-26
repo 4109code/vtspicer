@@ -15,6 +15,9 @@ import {
   linesCoincide,
   lineEnds,
   loadLineCurrent,
+  followerGain,
+  followerZout,
+  analyzeFollower,
 } from '../lib/loadline.js';
 import {
   plateCurrent,
@@ -105,6 +108,33 @@ describe('stage loads', () => {
     close(sample.ip, iq + (vp - sample.vp) / stage.rac, 1e-4);
     const levels = swingLevels(1, op.vpp, op.ipp);
     close(op.pout, (levels.voutRms ** 2) / 300, 1e-6);
+  });
+});
+
+describe('cathode follower', () => {
+  it('matches the cathode gain and the impedance looking into the cathode', () => {
+    close(followerGain(20, 2000, 200), (20 * 200) / (2000 + 21 * 200));
+    const looking = 2000 / 21;
+    close(followerZout(2000, 20, 1000), 1 / (1 / 1000 + 1 / looking));
+  });
+
+  it('delivers phone power as the cathode swing squared over Zhp, with the plate voltage fixed', () => {
+    const mu = 20;
+    const ra = 2000;
+    const gm = mu / ra;
+    const ipAt = (vg, vp) => Math.max(0, gm * (vg + vp / mu));
+    const vp = 200;
+    const vg = -4;
+    const zhp = 300;
+    const op = analyzeFollower({ ipAt, vg, vp, zhp, vin: 1, vpHi: 400 });
+    const rk = -vg / ipAt(vg, vp);
+    const rac = 1 / (1 / rk + 1 / zhp);
+    close(op.av, followerGain(mu, ra, rac), 1e-3);
+    close(op.zout, followerZout(ra, mu, rk), 1e-3);
+    assert.ok(op.samples.every((s) => Math.abs(s.vp - vp) < 1e-6));
+    const levels = swingLevels(1, op.vpp, op.ipp);
+    close(op.pout, (levels.voutRms ** 2) / zhp, 1e-6);
+    assert.ok(op.pout > 0);
   });
 });
 

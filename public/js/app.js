@@ -33,6 +33,7 @@ import {
   linesCoincide,
   resolveStageLoad,
   clipDrive,
+  compareConnections,
   droppedScreen,
   swingSamples,
   VG_SEARCH_HI,
@@ -218,6 +219,7 @@ function readLoadUi() {
     zhp: Math.max(0, num('loadZhp', 300)),
     eta: Math.min(1, Math.max(0, num('loadEta', 1))),
     topology: $('loadHpTopo')?.value === 'follower' ? 'follower' : 'plate',
+    plateLoad: $('loadPlate')?.value === 'choke' ? 'choke' : 'resistor',
   });
   return {
     show: $('showLoadLine').checked,
@@ -241,6 +243,7 @@ function readLoadUi() {
     dcr: Math.max(0, num('loadDcr', 200)),
     zhp: Math.max(0, num('loadZhp', 300)),
     topology: stage.topology,
+    plateLoad: stage.plateLoad || 'resistor',
     xfmr: stage.eta,
     zspk: [4, 8, 16].includes(num('loadZspk', 8)) ? num('loadZspk', 8) : 8,
     rdc: stage.rdc,
@@ -248,6 +251,7 @@ function readLoadUi() {
     zLoad: stage.zLoad,
     rg2: Math.max(0, num('loadRg2', 470000)),
     rg2On: Boolean($('loadRg2On')?.checked),
+    strap: Boolean($('loadStrap')?.checked),
     voutTarget: Math.max(0, num('loadVout', 0)),
     pg2Max: Math.max(0, num('loadPg2', 0)),
     zpFixed: Boolean($('loadZpFixed')?.checked),
@@ -447,6 +451,10 @@ function applyAcResistance(r) {
     $('loadZp').value = String(Math.round(r));
     return;
   }
+  if (load.plateLoad === 'choke') {
+    $('loadRg').value = String(Math.round(r));
+    return;
+  }
   if (load.purpose === 'headphone') {
     const zhp = parallelOther(load.rp, r);
     if (zhp == null) return;
@@ -464,7 +472,7 @@ function applyAcResistance(r) {
 
 function applyDcResistance(r) {
   const load = readLoadUi();
-  if (load.purpose === 'output') $('loadDcr').value = String(Math.round(r));
+  if (load.purpose === 'output' || load.plateLoad === 'choke') $('loadDcr').value = String(Math.round(r));
   else $('loadRp').value = String(Math.round(r));
 }
 
@@ -557,6 +565,7 @@ function hitLoadHandle(local) {
 }
 
 function eg2For(vp, eg2, load, vg) {
+  if (load.strap && isMultiGrid()) return vp;
   if (load.screenSupply && load.rg2 > 0 && vg != null && isMultiGrid()) {
     const dropped = droppedScreen(screenAt, vg, vp, load.screenSupply.vc, load.rg2);
     if (dropped != null) return dropped;
@@ -619,7 +628,7 @@ function redraw() {
   const ulTap = isMultiGrid() && load.purpose === 'output' && load.ulOn ? [load.ul, load.vp] : null;
   const nextCurveKey = JSON.stringify([
     state.modelId, state.type, state.params, vgList, vpMax, vpSteps, eg2, ulTap,
-    load.rg2On, load.rg2, load.screenSupply,
+    load.rg2On, load.rg2, load.screenSupply, load.strap,
     isMultiGrid() && $('showScreenCurves').checked, isMultiGrid() && load.showSum,
     !diode && load.showIg, load.gridLaw, load.showPmax, load.pmax,
   ]);
@@ -670,6 +679,7 @@ function redraw() {
       zLoad: load.zLoad,
       bypassed: load.bypassed,
       rg2: load.rg2On ? load.rg2 : 0,
+      strap: Boolean(load.strap),
       vin: diode ? 0 : load.vin,
       eg2,
       ul: isMultiGrid() && load.ulOn ? load.ul : 0,
@@ -686,7 +696,13 @@ function redraw() {
     updateStageParts(op, load, diode);
   }
   const ipMax = plot.calib.ipMax;
-  if (load.show && load.topology === 'follower') {
+  if (load.show && !Number.isFinite(op.rac) && op.ip > 0) {
+    plot.dcLine = op.rdc > 0 ? lineEnds(load.vp, op.ip, op.rdc) : null;
+    plot.loadLine = [
+      { vp: 0, ip: op.ip },
+      { vp: Math.max(vpMax, load.vp), ip: op.ip },
+    ];
+  } else if (load.show && load.topology === 'follower') {
     plot.dcLine = null;
     plot.loadLine = [
       { vp: load.vp, ip: 0 },
@@ -902,6 +918,47 @@ function updateStageParts(op, load, diode) {
     rows.push(loadMetric('Lp', lp, 'Primary inductance for the low corner'));
   }
   box.replaceChildren(...rows);
+}
+
+function applyConnection(id) {
+  $('ulOn').checked = id === 'ul';
+  $('loadStrap').checked = id === 'triode';
+  updateMultiVisibility();
+  scheduleRedraw();
+  persist();
+}
+
+function runConnectionCompare() {
+  const load = readLoadUi();
+  const rows = compareConnections({
+    ipAt: plateAt,
+    ig2At: isMultiGrid() ? screenAt : null,
+    vg: load.vg,
+    vp: load.vp,
+    zp: load.zp,
+    dcr: load.dcr,
+    eta: load.xfmr,
+    vin: load.vin,
+    eg2: readEg2(),
+    ul: load.ul,
+    vpHi: Math.max(readVpMax() * 5, load.vp * 4, 2000),
+  });
+  const names = { pentode: 'Pentode', ul: 'Ultralinear', triode: 'Triode' };
+  const box = $('connCompare');
+  box.replaceChildren(...rows.map((row) => {
+    const df = row.df == null || !Number.isFinite(row.df) ? '—' : row.df.toFixed(2);
+    const line = loadMetric(
+      names[row.id] || row.id,
+      `${fmtFix(row.pout, 3, ' W')}, ${fmtOhm(row.zout)}, DF ${df}, ${fmtFix(row.thd, 2, '%')}`,
+      'Power, Zout, damping factor, THD',
+    );
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.textContent = 'Use';
+    btn.addEventListener('click', () => applyConnection(row.id));
+    line.append(btn);
+    return line;
+  }));
 }
 
 function applySeriesParts() {
@@ -1122,7 +1179,6 @@ function syncPurposeFields() {
   show('loadPurposeRow', !diode);
   show('loadRgRow', !diode && purpose === 'preamp');
   show('loadZpRow', !diode && purpose === 'output');
-  show('loadDcrRow', !diode && purpose === 'output');
   show('loadZspkRow', !diode && purpose === 'output');
   show('loadEtaRow', !diode && purpose === 'output');
   show('loadZhpRow', !diode && purpose === 'headphone');
@@ -1130,6 +1186,7 @@ function syncPurposeFields() {
   show('loadBypassRow', !diode && !(purpose === 'headphone' && $('loadHpTopo')?.value === 'follower'));
   show('loadVoutRow', !diode && purpose === 'preamp');
   show('loadPg2Row', !diode && purpose === 'output' && isMultiGrid());
+  show('connRow', !diode && purpose === 'output' && isMultiGrid());
   show('rg2Row', !diode && purpose === 'preamp' && isMultiGrid());
   show('loadRg2Field', !diode && purpose === 'preamp' && isMultiGrid() && $('loadRg2On')?.checked);
   const optHint = $('loadOptHint');
@@ -1140,7 +1197,10 @@ function syncPurposeFields() {
         ? 'Most power in the headphones at or below THD. Plate heat stays within Pmax'
         : 'Most power into Zp at or below THD. Plate heat stays within Pmax. Supply stays at or below Vc';
   }
-  show('loadRpRow', diode || (purpose !== 'output' && !(purpose === 'headphone' && $('loadHpTopo')?.value === 'follower')));
+  const choke = purpose === 'preamp' && $('loadPlate')?.value === 'choke';
+  show('loadPlateRow', !diode && purpose === 'preamp');
+  show('loadRpRow', diode || (purpose !== 'output' && !(purpose === 'headphone' && $('loadHpTopo')?.value === 'follower') && !choke));
+  show('loadDcrRow', !diode && (purpose === 'output' || choke));
   if ($('loadZhpHint')) {
     $('loadZhpHint').textContent = $('loadHpTopo')?.value === 'follower'
       ? 'Headphone impedance across the cathode'
@@ -1358,6 +1418,7 @@ function restore() {
       bypassed: 'loadBypass',
       zpFixed: 'loadZpFixed',
       rg2On: 'loadRg2On',
+      strap: 'loadStrap',
     };
     for (const [key, id] of Object.entries(map)) {
       if (typeof data.load[key] === 'boolean') $(id).checked = data.load[key];
@@ -1374,6 +1435,9 @@ function restore() {
     }
     if (data.load.purpose === 'output' || data.load.purpose === 'headphone' || data.load.purpose === 'preamp') {
       $('loadPurpose').value = data.load.purpose;
+    }
+    if (data.load.plateLoad === 'choke' || data.load.plateLoad === 'resistor') {
+      $('loadPlate').value = data.load.plateLoad;
     }
     if (data.load.topology === 'follower' || data.load.topology === 'plate') {
       $('loadHpTopo').value = data.load.topology;
@@ -1477,6 +1541,11 @@ function bindUi() {
     scheduleRedraw();
     persist();
   });
+  $('loadPlate').addEventListener('change', () => {
+    syncPurposeFields();
+    scheduleRedraw();
+    persist();
+  });
   $('loadHpTopo').addEventListener('change', () => {
     syncPurposeFields();
     scheduleRedraw();
@@ -1538,6 +1607,7 @@ function bindUi() {
     resetSavedSession();
   });
   $('btnBestLoad').addEventListener('click', () => applyBestLoadLine());
+  $('btnCompare').addEventListener('click', () => runConnectionCompare());
   $('btnApplyParts').addEventListener('click', () => applySeriesParts());
 
   $('btnFitGuides').addEventListener('click', () => runGuideFit());

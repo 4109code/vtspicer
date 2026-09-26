@@ -20,6 +20,7 @@ import {
   analyzeFollower,
   clipDrive,
   droppedScreen,
+  compareConnections,
 } from '../lib/loadline.js';
 import {
   plateCurrent,
@@ -85,6 +86,15 @@ describe('stage loads', () => {
     close(deliveredPower({ purpose: 'output', voutRms, zLoad: stage.zLoad, eta: stage.eta }), (voutRms ** 2 / 5000) * 0.85);
   });
 
+  it('uses choke DCR for the DC line and only the following grid for AC', () => {
+    const fed = resolveStageLoad({ purpose: 'preamp', plateLoad: 'choke', dcr: 200, rg: 100000, rp: 47000 });
+    close(fed.rdc, 200);
+    close(fed.rac, 100000);
+    const open = resolveStageLoad({ purpose: 'preamp', plateLoad: 'choke', dcr: 150, rg: 0 });
+    assert.equal(open.rac, Infinity);
+    close(open.rdc, 150);
+  });
+
   it('puts headphone power in Zhp while the swing sits on Rp parallel to Zhp', () => {
     const stage = resolveStageLoad({ purpose: 'headphone', rp: 10000, zhp: 300 });
     close(stage.rdc, 10000);
@@ -110,6 +120,32 @@ describe('stage loads', () => {
     close(sample.ip, iq + (vp - sample.vp) / stage.rac, 1e-4);
     const levels = swingLevels(1, op.vpp, op.ipp);
     close(op.pout, (levels.voutRms ** 2) / 300, 1e-6);
+  });
+});
+
+describe('output connections', () => {
+  it('gives the triode strap a higher damping factor than a fixed screen', () => {
+    const ipAt = (vg, vp, eg2) => Math.max(0, 0.0004 * (vg + 8) + 0.00003 * eg2 + vp / 30000);
+    const ig2At = (vg, _vp, eg2) => Math.max(0, 1e-5 * eg2 + 0.0001 * (vg + 8));
+    const rows = compareConnections({
+      ipAt,
+      ig2At,
+      vg: -6,
+      vp: 300,
+      zp: 5000,
+      dcr: 200,
+      vin: 2,
+      eg2: 300,
+      ul: 0.43,
+      vpHi: 800,
+    });
+    const pentode = rows.find((row) => row.id === 'pentode');
+    const triode = rows.find((row) => row.id === 'triode');
+    const ultra = rows.find((row) => row.id === 'ul');
+    assert.ok(pentode && triode && ultra);
+    assert.ok(triode.df > pentode.df, `triode ${triode.df} pentode ${pentode.df}`);
+    assert.ok(ultra.df > pentode.df && ultra.df < triode.df);
+    assert.ok(rows.every((row) => row.pout > 0 && Number.isFinite(row.thd)));
   });
 });
 

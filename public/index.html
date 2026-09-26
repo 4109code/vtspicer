@@ -118,6 +118,13 @@
             <option value="headphone">Headphone</option>
           </select>
         </label>
+        <div class="load-field" id="loadPlateRow">
+          <span class="param-name"><span class="param-key">Load</span><span class="param-hint">A choke or CCS keeps only its DC resistance. The AC line is the next grid, or open</span></span>
+          <select id="loadPlate">
+            <option value="resistor" selected>Resistor</option>
+            <option value="choke">Choke / CCS</option>
+          </select>
+        </div>
         <div class="load-field" id="loadRpRow">
           <span class="param-name"><span class="param-key" id="loadRpKey">Rp</span><span class="param-hint" id="loadRpHint">Plate resistor. Sets the DC line</span></span>
           <input id="loadRp" type="number" value="100000" step="100" />
@@ -269,6 +276,13 @@
           </div>
           <p id="loadOptHint" class="param-hint">Most output power at or below THD. Plate heat stays within Pmax. Supply
             stays at or below Vc</p>
+        </div>
+        <input type="checkbox" id="loadStrap" hidden />
+        <div id="connRow" hidden>
+          <div class="row">
+            <button type="button" id="btnCompare">Compare connections</button>
+          </div>
+          <div id="connCompare" class="load-results"></div>
         </div>
       </section>
       <section>

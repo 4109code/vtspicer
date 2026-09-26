@@ -166,6 +166,16 @@ export function undoGuidePoint(guides, activeVg = null) {
   return list.filter((g) => g.points.length > 0);
 }
 
+export function removeGuidePoint(guides, gi, pi) {
+  const list = cloneGuides(guides);
+  const curve = list[gi];
+  if (!curve || pi < 0 || pi >= curve.points.length) {
+    return list.filter((g) => g.points.length > 0);
+  }
+  curve.points.splice(pi, 1);
+  return list.filter((g) => g.points.length > 0);
+}
+
 export function hitGuidePoint(plot, guides, x, y, radius = 10) {
   const r2 = radius * radius;
   let best = null;

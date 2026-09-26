@@ -16,6 +16,7 @@ import { Calibrator } from './calibrate.js';
 import {
   addGuidePoint,
   undoGuidePoint,
+  removeGuidePoint,
   fitParamsToGuides,
   countGuidePoints,
   hitGuideLayers,
@@ -77,6 +78,7 @@ let rafPending = false;
 let paintOnly = false;
 let persistTimer = 0;
 let drag = null;
+let hoverGuide = null;
 let skipDrawClick = false;
 let loadPlaced = false;
 
@@ -735,17 +737,17 @@ function updateDrawStatus(extra = '', { error = false } = {}) {
   if (plateN + screenN === 0) {
     base =
       state.type === 'diode'
-        ? 'Click the plot to place points along the anode curve, then Fit.'
+        ? 'Trace the anode curve, then Fit.'
         : isMultiGrid()
-          ? 'Click the plot to place points. Plate follows Ip, Screen follows Ig2. Change Active Vg for the next curve, then Fit.'
-          : 'Click the plot to place a few points along each datasheet Vg curve. Change Active Vg for the next curve, then Fit.';
+          ? 'Plate follows Ip, Screen follows Ig2, then Fit.'
+          : '';
   } else {
     const parts = [];
     if (plateN) parts.push(`plate ${state.guides.length} curve(s), ${plateN} pt`);
     if (screenN) parts.push(`screen ${state.screenGuides.length} curve(s), ${screenN} pt`);
-    base = `${parts.join(' · ')}. Drag points to adjust.`;
+    base = `${parts.join(' · ')}.`;
   }
-  el.textContent = extra ? `${base} ${extra}` : base;
+  el.textContent = [base, extra].filter(Boolean).join(' ');
   el.classList.toggle('error', error);
 }
 
@@ -895,6 +897,8 @@ function applyPreset(preset) {
 function resetToFormulaDefaults() {
   $('presetSelect').value = '';
   hideNotice($('modelNote'));
+  $('tubeName').value = '';
+  state.name = 'TUBE';
   state.params = defaultParams(state.modelId, state.type);
   writeCaps(state.params);
   applyAxisDefaults();
@@ -1127,7 +1131,10 @@ function bindUi() {
     });
   }
 
-  $('btnNewTube').addEventListener('click', () => resetToFormulaDefaults());
+  $('btnNewTube').addEventListener('click', () => {
+    if (!confirm('Overwrite the current tube?')) return;
+    resetToFormulaDefaults();
+  });
   $('btnBestLoad').addEventListener('click', () => applyBestLoadLine());
 
   $('btnFitGuides').addEventListener('click', () => runGuideFit());
@@ -1147,6 +1154,15 @@ function bindUi() {
       if (t instanceof HTMLInputElement || t instanceof HTMLTextAreaElement) return;
       e.preventDefault();
       undoActiveGuide();
+    }
+    if ((e.key === 'Delete' || e.key === 'Backspace') && !calibrator.active && !drag) {
+      const t = e.target;
+      if (t instanceof HTMLInputElement || t instanceof HTMLTextAreaElement) return;
+      if (!hoverGuide) return;
+      e.preventDefault();
+      const hit = hoverGuide;
+      hoverGuide = null;
+      removeGuideAt(hit);
     }
   });
   $('btnClearImage').addEventListener('click', () => {
@@ -1190,6 +1206,7 @@ function bindUi() {
       setNotice(note, parsed.reason, { error: true });
       return false;
     }
+    if (!confirm('Overwrite the current tube with the pasted SUBCKT / PARAMS?')) return false;
     const model = getModel(parsed.modelId);
     const merged = clampParams(parsed.modelId, {
       ...defaultParams(parsed.modelId, parsed.type),
@@ -1279,14 +1296,44 @@ function bindUi() {
   canvas.addEventListener('pointerdown', onPointerDown);
   canvas.addEventListener('pointermove', onPointerMove);
   canvas.addEventListener('pointerup', onPointerUp);
-  canvas.addEventListener('pointerleave', onPointerUp);
+  canvas.addEventListener('pointerleave', (evt) => {
+    hoverGuide = null;
+    onPointerUp(evt);
+  });
   canvas.addEventListener('click', onClick);
+  canvas.addEventListener('contextmenu', onGuideContextMenu);
 }
 
 function undoActiveGuide() {
   const vg = Number($('drawVg').value);
   const layer = guideLayer();
   setGuideLayer(layer, undoGuidePoint(guidesFor(layer), Number.isFinite(vg) ? vg : null));
+}
+
+function guideHitAt(x, y) {
+  return hitGuideLayers(
+    plot,
+    [
+      { id: 'plate', guides: state.guides },
+      { id: 'screen', guides: state.screenGuides },
+    ],
+    x,
+    y,
+    12,
+  );
+}
+
+function removeGuideAt(hit) {
+  if (!hit) return;
+  hoverGuide = null;
+  setGuideLayer(hit.layer, removeGuidePoint(guidesFor(hit.layer), hit.gi, hit.pi), { fit: true });
+}
+
+function onGuideContextMenu(evt) {
+  evt.preventDefault();
+  if (calibrator.active || drag) return;
+  const local = plot.eventToLocal(evt);
+  removeGuideAt(guideHitAt(local.x, local.y));
 }
 
 function onClick(evt) {
@@ -1308,7 +1355,7 @@ function onClick(evt) {
 }
 
 function onPointerDown(evt) {
-  if (calibrator.active) return;
+  if (calibrator.active || evt.button !== 0) return;
   const local = plot.eventToLocal(evt);
   try {
     canvas.setPointerCapture(evt.pointerId);
@@ -1323,16 +1370,7 @@ function onPointerDown(evt) {
     return;
   }
 
-  const hit = hitGuideLayers(
-    plot,
-    [
-      { id: 'plate', guides: state.guides },
-      { id: 'screen', guides: state.screenGuides },
-    ],
-    local.x,
-    local.y,
-    12,
-  );
+  const hit = guideHitAt(local.x, local.y);
   if (hit) {
     skipDrawClick = true;
     drag = {
@@ -1372,6 +1410,7 @@ function onPointerMove(evt) {
   }
   $('cursorReadout').textContent = cursor;
 
+  hoverGuide = guideHitAt(local.x, local.y);
   canvas.style.cursor = hitLoadHandle(local) || drag?.kind === 'vin' || drag?.kind === 'center' ? 'grab' : '';
 
   if (!drag) return;

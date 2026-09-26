@@ -56,7 +56,7 @@
         <p id="calibStatus" class="hint">No calibration yet. Click origin (0), then Vpmax, then IpMax.</p>
         <div class="grid2">
           <label>Vp max (V) <input id="vpMax" type="number" value="400" step="10" /></label>
-          <label>Ip max (mA) <input id="ipMax" type="number" value="10" step="0.1" /></label>
+          <label>Ip max (mA) <input id="ipMax" type="number" value="10" step="10" /></label>
         </div>
       </section>
 
@@ -67,11 +67,12 @@
         <label id="eg2Row">Vg2 <input id="eg2" type="number" value="300" step="10" /></label>
         <label id="showScreenRow" class="check"><input type="checkbox" id="showScreenCurves" checked /> Show screen
           (Ig2) curves</label>
-        <label>Vp steps <input id="vpSteps" type="number" value="120" min="20" max="400" /></label>
+        <label>Vp steps <input id="vpSteps" type="number" value="120" min="20" max="400" step="10" /></label>
       </section>
 
       <section>
         <h2>Vg guides</h2>
+        <p class="hint">Click the plot to place points along a datasheet curve. Change Active Vg for the next curve. Drag to move a point, right-click or Delete to remove it.</p>
         <div id="drawControls" class="draw-controls">
           <div id="guideLayerRow" class="row">
             <label class="check"><input type="radio" name="guideLayer" id="guideLayerPlate" value="plate" checked />
@@ -86,9 +87,7 @@
             <button type="button" id="btnUndoGuide">Undo point</button>
             <button type="button" id="btnClearGuides">Clear guides</button>
           </div>
-          <p id="drawStatus" class="hint">Click the plot to place a few points along each datasheet Vg curve. On a
-            pentode, Plate follows Ip and Screen follows Ig2. Change
-            Active Vg for the next curve, then Fit.</p>
+          <p id="drawStatus" class="hint"></p>
         </div>
       </section>
 
@@ -115,7 +114,7 @@
         <div class="load-field">
           <span class="param-name"><span class="param-key">Rp</span><span class="param-hint">Plate load. Sets the line
               slope</span></span>
-          <input id="loadRp" type="number" value="100000" step="1000" />
+          <input id="loadRp" type="number" value="100000" step="100" />
         </div>
         <div class="load-field">
           <span class="param-name"><span class="param-key">Vp</span><span class="param-hint">Quiescent plate
@@ -125,7 +124,7 @@
         <div class="load-field" id="loadVgRow">
           <span class="param-name"><span class="param-key">Vg</span><span class="param-hint">Quiescent grid
               voltage</span></span>
-          <input id="loadVg" type="number" value="-2" step="0.5" />
+          <input id="loadVg" type="number" value="-2" step="0.1" />
         </div>
         <div class="load-field" id="loadVinRow">
           <span class="param-name"><span class="param-key">Vin</span><span class="param-hint">Peak grid swing. Drag an
@@ -184,7 +183,7 @@
         <div class="load-field">
           <span class="param-name"><span class="param-key">Pmax</span><span class="param-hint">Plate dissipation limit,
               watts</span></span>
-          <input id="loadPmax" type="number" value="1" step="0.1" />
+          <input id="loadPmax" type="number" value="1" step="1" />
         </div>
         <label class="check load-check"><input type="checkbox" id="showPmax" checked /> Dissipation curve <span
             class="param-hint">Ip = Pmax / Vp</span></label>

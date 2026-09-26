@@ -35,12 +35,14 @@ import {
   clipDrive,
   compareConnections,
   droppedScreen,
+  coupledScreen,
   swingSamples,
   VG_SEARCH_HI,
   VG_SEARCH_LO,
   vgAtCurrent,
   smallSignal,
   optimizeLoadLine,
+  vgForCathodeResistor,
 } from '/lib/loadline.js';
 import { CHILD_DEFAULTS, CHILD_KEYS, PIN_ORDER, childLawIg, gridCurrent } from '/lib/models/math.js';
 import { stageParts, stageCorners } from '/lib/stage.js';
@@ -328,7 +330,7 @@ function applyBestLoadLine() {
   const eg2 = readEg2();
   const vpMax = readVpMax();
   const hint = $('loadOptHint');
-  setNotice(hint, 'Searching�');
+  setNotice(hint, 'Searching…');
   const best = optimizeLoadLine({
     ipAt: plateAt,
     ig2At: isMultiGrid() ? screenAt : null,
@@ -576,20 +578,14 @@ function eg2For(vp, eg2, load, vg) {
 
 function withScreenSupply(load) {
   if (!(isMultiGrid() && load.purpose === 'preamp' && load.rg2On && load.rg2 > 0)) return load;
-  let screen = readEg2();
-  let vc = load.vp;
-  for (let n = 0; n < 8; n++) {
-    const ip = plateAt(load.vg, load.vp, screen);
-    vc = load.vp + load.rdc * Math.max(0, ip);
-    const next = droppedScreen(screenAt, load.vg, load.vp, vc, load.rg2);
-    if (next == null) break;
-    if (Math.abs(next - screen) < 0.05) {
-      screen = next;
-      break;
-    }
-    screen = next;
-  }
-  return { ...load, screenSupply: { vc, eg2: screen } };
+  const solved = coupledScreen(plateAt, screenAt, {
+    vg: load.vg,
+    vp: load.vp,
+    rdc: load.rdc,
+    rg2: load.rg2,
+    eg2: readEg2(),
+  });
+  return { ...load, screenSupply: { vc: solved.vc, eg2: solved.screen } };
 }
 
 function sweepCurves(vgList, vpMax, vpSteps, eg2, load, currentFn) {
@@ -744,6 +740,12 @@ function fmtFix(n, digits, suffix = '') {
   return `${n.toFixed(digits)}${suffix}`;
 }
 
+function fmtPower(w) {
+  if (w == null || !Number.isFinite(w)) return '—';
+  if (Math.abs(w) < 0.05) return `${(w * 1000).toFixed(2)} mW`;
+  return `${w.toFixed(3)} W`;
+}
+
 function loadMetric(key, value, hint) {
   const row = document.createElement('div');
   row.className = 'load-metric';
@@ -812,7 +814,7 @@ function updateLoadResults(op, load, diode) {
         : 'Rp in parallel with ra';
     rows.push(loadMetric('Zout', fmtOhm(op.zout), zoutHint));
     rows.push(loadMetric('Zin', fmtOhm(op.zin), 'Grid impedance at 10 kHz'));
-    rows.push(loadMetric('Vin rms', fmtFix(levels.vinRms, 2, ' V'), 'Peak grid swing over ?2'));
+    rows.push(loadMetric('Vin rms', fmtFix(levels.vinRms, 2, ' V'), 'Peak grid swing over √2'));
     rows.push(loadMetric(
       'Vout pp',
       fmtFix(levels.voutPp, 1, ' V'),
@@ -827,7 +829,7 @@ function updateLoadResults(op, load, diode) {
       : load.purpose === 'headphone'
         ? 'Vout rms squared over the headphone impedance'
         : 'Vout rms times Iout rms';
-    rows.push(loadMetric('Pout', fmtFix(op.pout, 3, ' W'), poutHint));
+    rows.push(loadMetric('Pout', fmtPower(op.pout), poutHint));
     const clip = clipDrive({
       ipAt: plateAt,
       vg: load.vg,
@@ -843,6 +845,10 @@ function updateLoadResults(op, load, diode) {
       purpose: load.purpose,
       topology: load.topology,
       vpHi: Math.max(readVpMax() * 5, load.vp * 4, 2000),
+      ig2At: isMultiGrid() ? screenAt : null,
+      rg2: load.rg2On ? load.rg2 : 0,
+      strap: Boolean(load.strap),
+      screenVc: op.vc,
     });
     const clipName = {
       cutoff: 'Cutoff',
@@ -968,8 +974,17 @@ function applySeriesParts() {
   const series = $('partSeries').value === 'E12' ? 'E12' : 'E24';
   for (const part of stageParts(load, lastOp, { series, fLow })) {
     if (!(part.snapped > 0) || !part.field) continue;
-    if (part.field === 'vg') $('loadVg').value = (-lastOp.ip * part.snapped).toFixed(2);
-    else $(part.field).value = String(part.snapped);
+    if (part.field === 'vg') {
+      const eg2 = readEg2();
+      const vg = vgForCathodeResistor(
+        (g, p, screen) => plateAt(g, p, eg2For(p, eg2, load, g) ?? screen),
+        load.vp,
+        part.snapped,
+        eg2,
+      );
+      if (vg == null) continue;
+      $('loadVg').value = vg.toFixed(3);
+    } else $(part.field).value = String(part.snapped);
   }
   loadPlaced = true;
   scheduleRedraw();

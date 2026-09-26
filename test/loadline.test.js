@@ -1,5 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import {
   harmonics,
   intersectLoadLine,
@@ -21,6 +22,7 @@ import {
   clipDrive,
   droppedScreen,
   compareConnections,
+  vgForCathodeResistor,
 } from '../lib/loadline.js';
 import {
   plateCurrent,
@@ -170,6 +172,28 @@ describe('screen dropper', () => {
     assert.ok(Math.abs(op.screen - 250) > 20, `screen=${op.screen}`);
     const screens = op.samples.map((s) => s.screen);
     assert.ok(Math.max(...screens) - Math.min(...screens) > 1, `screens=${screens}`);
+    const ig2 = Math.max(0, swinging(op.samples[3].vg, 200, op.screen));
+    assert.ok(Math.abs(op.vc - ig2 * 1e5 - op.screen) < 0.05, `residual vc=${op.vc} screen=${op.screen}`);
+  });
+
+  it('uses the moving-screen swing for gain, and the supply equation at the quiescent point', () => {
+    const preset = JSON.parse(readFileSync(new URL('../presets/tubes/pentode.json', import.meta.url)))
+      .find((item) => item.id === '6BR7');
+    const ipAt = (vg, vp, eg2) => plateCurrent(preset.model, preset.type, vg, vp, eg2, preset.params);
+    const ig2At = (vg, vp, eg2) => screenCurrent(preset.model, preset.type, vg, vp, eg2, preset.params);
+    const rp = 220e3;
+    const rg = 470e3;
+    const rac = 1 / (1 / rp + 1 / rg);
+    const op = analyzeLoadLine({
+      ipAt, ig2At, vg: -1.5, vp: 100, eg2: 100, rp, rdc: rp, rac,
+      purpose: 'preamp', rg2: 470e3, vin: 0.05, vpHi: 800,
+    });
+    const swingGain = Math.abs(op.vpp) / (2 * 0.05);
+    assert.ok(op.screen > 20 && op.screen < op.vc - 5, `screen ${op.screen} vc ${op.vc}`);
+    assert.ok(Math.abs(op.vc - Math.max(0, op.ig2) * 470e3 - op.screen) < 0.05, `residual ${op.vc}`);
+    assert.ok(Math.abs(op.av - swingGain) / swingGain < 0.2, `av ${op.av} swing ${swingGain}`);
+    const fixed = (op.mu * rac) / (op.ra + rac);
+    assert.ok(op.av < fixed * 0.85, `moving ${op.av} fixed-screen ${fixed}`);
   });
 });
 
@@ -182,6 +206,21 @@ describe('clipping wall', () => {
     const clip = clipDrive({ ipAt, vg, vp, iq, rac: 800, pmax: 50, vpHi: 400 });
     assert.equal(clip.wall, 'grid');
     assert.ok(Math.abs(clip.vin - 2) < 0.25, `vin=${clip.vin}`);
+  });
+});
+
+describe('cathode resistor bias', () => {
+  it('finds the grid voltage that actually draws Ip = −Vg / Rk', () => {
+    const preset = JSON.parse(readFileSync(new URL('../presets/tubes/triode.json', import.meta.url)))
+      .find((item) => item.id === '12AX7');
+    const ipAt = (vg, vp, eg2) => plateCurrent(preset.model, preset.type, vg, vp, eg2, preset.params);
+    const vp = 180;
+    const rk = 3000;
+    const guessed = -ipAt(-1.5, vp, 0) * rk;
+    const vg = vgForCathodeResistor(ipAt, vp, rk, 0);
+    const ip = ipAt(vg, vp, 0);
+    assert.ok(Math.abs(-vg / ip - rk) < 1, `Rk ${-vg / ip}`);
+    assert.ok(Math.abs(-guessed / ipAt(guessed, vp, 0) - rk) > 50, 'one-step guess should miss the snapped resistor');
   });
 });
 
@@ -417,6 +456,10 @@ describe('optimizeLoadLine', () => {
     assert.ok(loud && easy);
     assert.ok(loud.thd <= 5.001 && easy.voutRms >= 0.2);
     assert.ok(easy.iq < loud.iq, `easy ${easy.iq} loud ${loud.iq}`);
+    const full = ipAt(0, easy.vp, 0);
+    assert.ok(easy.rp <= 470e3, `rp ${easy.rp}`);
+    assert.ok(easy.vp >= 400 * 0.3 * 0.98, `vp ${easy.vp}`);
+    assert.ok(easy.iq >= full * 0.1, `iq ${easy.iq} full ${full}`);
 
     const output = optimizeLoadLine({
       ipAt, purpose: 'output', zp: 5000, dcr: 200, eta: 0.85, pmax: 1, thdMax: 5, vpHi: 400,

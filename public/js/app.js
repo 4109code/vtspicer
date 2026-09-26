@@ -29,6 +29,9 @@ import {
   screenVoltage,
   swingLevels,
   loadLineCurrent,
+  lineEnds,
+  linesCoincide,
+  resolveStageLoad,
   swingSamples,
   VG_SEARCH_HI,
   VG_SEARCH_LO,
@@ -201,9 +204,20 @@ function readLoadUi() {
     const n = Number($(id).value);
     return Number.isFinite(n) ? n : fallback;
   };
+  const purpose = $('loadPurpose')?.value || 'preamp';
+  const rp = Math.max(1, num('loadRp', 100000));
+  const stage = resolveStageLoad({
+    purpose: state.type === 'diode' ? 'preamp' : purpose,
+    rp,
+    rg: Math.max(0, num('loadRg', 0)),
+    dcr: Math.max(0, num('loadDcr', 200)),
+    zp: Math.max(0, num('loadZp', 5000)),
+    zhp: Math.max(0, num('loadZhp', 300)),
+    eta: Math.min(1, Math.max(0, num('loadEta', 1))),
+  });
   return {
     show: $('showLoadLine').checked,
-    rp: Math.max(1, num('loadRp', 100000)),
+    rp,
     vp: num('loadVp', 250),
     vg: num('loadVg', -2),
     vin: Math.max(0, num('loadVin', 1)),
@@ -216,6 +230,16 @@ function readLoadUi() {
     showSum: $('showSum').checked,
     ulOn: $('ulOn').checked,
     ul: Math.min(1, Math.max(0, num('ulTap', 0.43))),
+    purpose: stage.purpose,
+    rg: Math.max(0, num('loadRg', 0)),
+    zp: Math.max(0, num('loadZp', 5000)),
+    dcr: Math.max(0, num('loadDcr', 200)),
+    zhp: Math.max(0, num('loadZhp', 300)),
+    xfmr: stage.eta,
+    zspk: [4, 8, 16].includes(num('loadZspk', 8)) ? num('loadZspk', 8) : 8,
+    rdc: stage.rdc,
+    rac: stage.rac,
+    zLoad: stage.zLoad,
   };
 }
 
@@ -305,7 +329,8 @@ function applyBestLoadLine() {
     return;
   }
   $('showLoadLine').checked = true;
-  $('loadRp').value = String(Math.max(1, Math.round(best.rp)));
+  if (load.purpose === 'output') $('loadZp').value = String(Math.max(1, Math.round(best.rp)));
+  else $('loadRp').value = String(Math.max(1, Math.round(best.rp)));
   $('loadVp').value = best.vp.toFixed(1);
   $('loadVg').value = best.vg.toFixed(2);
   $('loadVin').value = best.vin.toFixed(2);
@@ -325,7 +350,7 @@ function visibleVin(vp, ip, eg2) {
       vin,
       vq: vp,
       iq: ip,
-      rp: load.rp,
+      rp: load.rac,
       eg2,
       ul: isMultiGrid() && load.ulOn ? load.ul : 0,
       vpLo: 0,
@@ -375,17 +400,73 @@ function vinFromPoint(vp, ip) {
   return Math.abs(vg - load.vg);
 }
 
-/** Pivot the line around the quiescent point so it passes through this plate point. */
-function tiltLoadLine(vp, ip) {
-  const load = readLoadUi();
-  const eg2 = readEg2();
-  const iq = plateAt(state.type === 'diode' ? 0 : load.vg, load.vp, eg2For(load.vp, eg2, load));
+function resistanceThrough(vq, iq, vp, ip) {
   const den = ip - iq;
-  const num = load.vp - vp;
-  if (Math.abs(num) < 1 || Math.abs(den) < 1e-7) return;
-  const rp = num / den;
-  if (!(rp > 50)) return;
-  $('loadRp').value = String(Math.round(rp));
+  const num = vq - vp;
+  if (Math.abs(num) < 0.5 || Math.abs(den) < 1e-8) return null;
+  const r = num / den;
+  if (!(r > 1)) return null;
+  return r;
+}
+
+function parallelOther(series, parallel) {
+  if (!(parallel > 0) || !(series > parallel * 1.02)) return null;
+  const other = 1 / (1 / parallel - 1 / series);
+  return other > 1 ? other : null;
+}
+
+function applyAcResistance(r) {
+  const load = readLoadUi();
+  if (load.purpose === 'output') {
+    $('loadZp').value = String(Math.round(r));
+    return;
+  }
+  if (load.purpose === 'headphone') {
+    const zhp = parallelOther(load.rp, r);
+    if (zhp == null) return;
+    $('loadZhp').value = String(Math.round(zhp));
+    return;
+  }
+  if (!(load.rg > 0)) {
+    $('loadRp').value = String(Math.round(r));
+    return;
+  }
+  const rg = parallelOther(load.rp, r);
+  if (rg == null) return;
+  $('loadRg').value = String(Math.round(rg));
+}
+
+function applyDcResistance(r) {
+  const load = readLoadUi();
+  if (load.purpose === 'output') $('loadDcr').value = String(Math.round(r));
+  else $('loadRp').value = String(Math.round(r));
+}
+
+function segmentDist2(local, ends) {
+  if (!ends || ends.length < 2) return Infinity;
+  const a = plot.dataToPx(ends[0].vp, ends[0].ip);
+  const b = plot.dataToPx(ends[1].vp, ends[1].ip);
+  const dx = b.x - a.x;
+  const dy = b.y - a.y;
+  const len2 = dx * dx + dy * dy;
+  if (!(len2 > 1)) return (local.x - a.x) ** 2 + (local.y - a.y) ** 2;
+  let t = ((local.x - a.x) * dx + (local.y - a.y) * dy) / len2;
+  t = Math.max(0, Math.min(1, t));
+  const x = a.x + t * dx;
+  const y = a.y + t * dy;
+  return (local.x - x) ** 2 + (local.y - y) ** 2;
+}
+
+function projectOntoLine(local, ends) {
+  if (!ends || ends.length < 2) return null;
+  const a = plot.dataToPx(ends[0].vp, ends[0].ip);
+  const b = plot.dataToPx(ends[1].vp, ends[1].ip);
+  const dx = b.x - a.x;
+  const dy = b.y - a.y;
+  const len2 = dx * dx + dy * dy;
+  let t = len2 > 1 ? ((local.x - a.x) * dx + (local.y - a.y) * dy) / len2 : 0;
+  t = Math.max(0, Math.min(1, t));
+  return plot.pxToData(a.x + t * dx, a.y + t * dy);
 }
 
 /** Keep a swing end on the visible load line when the curve meeting is off the plot. */
@@ -399,7 +480,7 @@ function swingMarker(sample, side, load, iq, vpMax, ipMax) {
     sample.ip >= 0 &&
     sample.ip <= ipMax;
   if (onPlot) return { vp: sample.vp, ip: sample.ip };
-  const rp = load.rp;
+  const rp = load.rac > 0 ? load.rac : load.rp;
   const vq = load.vp;
   if (!(rp > 0) || !Number.isFinite(iq)) return null;
   if (side === 'high') {
@@ -440,7 +521,13 @@ function hitLoadHandle(local) {
       }
     }
   }
-  return best;
+  if (best) return best;
+  const lineReach = 12 * 12;
+  const dcD = segmentDist2(local, plot.dcLine);
+  const acD = segmentDist2(local, plot.loadLine);
+  if (plot.dcLine && dcD <= lineReach && dcD <= acD) return 'dc';
+  if (acD <= lineReach) return 'ac';
+  return null;
 }
 
 function eg2For(vp, eg2, load) {
@@ -526,6 +613,11 @@ function redraw() {
       vg: diode ? 0 : load.vg,
       vp: load.vp,
       rp: load.rp,
+      rdc: load.rdc,
+      rac: load.rac,
+      purpose: load.purpose,
+      eta: load.xfmr,
+      zLoad: load.zLoad,
       vin: diode ? 0 : load.vin,
       eg2,
       ul: isMultiGrid() && load.ulOn ? load.ul : 0,
@@ -539,12 +631,11 @@ function redraw() {
     updateLoadResults(op, load, diode);
     drawHarmonics(op.sweep);
   }
-  plot.loadLine = load.show && op.vc > 0
-    ? [
-      { vp: 0, ip: op.vc / load.rp },
-      { vp: op.vc, ip: 0 },
-    ]
-    : null;
+  const acEnds = load.show && op.rac > 0 ? lineEnds(load.vp, op.ip, op.rac) : null;
+  const dcEnds = load.show && op.rdc > 0 ? lineEnds(load.vp, op.ip, op.rdc) : null;
+  const split = acEnds && dcEnds && !linesCoincide(op.rdc, op.rac);
+  plot.dcLine = split ? dcEnds : null;
+  plot.loadLine = load.show ? (acEnds || dcEnds) : null;
   plot.qPoint = load.show ? { vp: load.vp, ip: op.ip } : null;
   const ipMax = plot.calib.ipMax;
   const ends = load.show && !diode && load.vin > 0 ? [op.samples?.[0], op.samples?.[6]] : [];
@@ -619,13 +710,27 @@ function updateLoadResults(op, load, diode) {
     rows.push(loadMetric('Gm', fmtFix(op.gm == null ? null : op.gm * 1000, 2, ' mA/V'), 'How Ip moves with Vg'));
     rows.push(loadMetric('Ra', fmtOhm(op.ra), 'Plate resistance. How Ip moves with Vp'));
     rows.push(loadMetric('Mu', fmtFix(op.mu, 1), 'Gain. Gm times ra'));
-    rows.push(loadMetric('Zout', fmtOhm(op.zout), 'Rp in parallel with ra'));
+    rows.push(loadMetric('Av', fmtFix(op.av, 2), 'Voltage gain into the AC load'));
+    if (!linesCoincide(op.rdc, op.rac)) {
+      rows.push(loadMetric('Rdc', fmtOhm(op.rdc), 'DC load through the supply'));
+      rows.push(loadMetric('Rac', fmtOhm(op.rac), 'AC load the swing follows'));
+    }
+    if (load.purpose === 'output' && load.zp > 0 && load.zspk > 0) {
+      rows.push(loadMetric('N', fmtFix(Math.sqrt(load.zp / load.zspk), 2), 'Primary to speaker turns ratio'));
+    }
+    const zoutHint = load.purpose === 'output' ? 'Plate resistance at the primary' : 'Rp in parallel with ra';
+    rows.push(loadMetric('Zout', fmtOhm(op.zout), zoutHint));
     rows.push(loadMetric('Zin', fmtOhm(op.zin), 'Grid impedance at 10 kHz'));
     rows.push(loadMetric('Vin rms', fmtFix(levels.vinRms, 2, ' V'), 'Peak grid swing over ?2'));
     rows.push(loadMetric('Vout pp', fmtFix(levels.voutPp, 1, ' V'), 'Plate voltage from one swing end to the other'));
     rows.push(loadMetric('Vout rms', fmtFix(levels.voutRms, 2, ' V'), 'Sine equivalent of that plate swing'));
     rows.push(loadMetric('Iout rms', fmtFix(levels.ioutRms * 1000, 2, ' mA'), 'Sine equivalent of the plate-current swing'));
-    rows.push(loadMetric('Pout', fmtFix(op.pout, 3, ' W'), 'Vout rms times Iout rms'));
+    const poutHint = load.purpose === 'output'
+      ? 'Vout rms squared over Zp, times transformer efficiency'
+      : load.purpose === 'headphone'
+        ? 'Vout rms squared over the headphone impedance'
+        : 'Vout rms times Iout rms';
+    rows.push(loadMetric('Pout', fmtFix(op.pout, 3, ' W'), poutHint));
     rows.push(loadMetric('THD', fmtFix(op.thd, 2, '%'), 'H2 through H5, combined'));
     rows.push(loadMetric('H2', fmtFix(op.h2, 2, '%'), 'Second harmonic'));
     rows.push(loadMetric('H3', fmtFix(op.h3, 2, '%'), 'Third harmonic'));
@@ -825,6 +930,29 @@ function updateMultiVisibility() {
   $('pinG2Wrap').style.display = multi ? '' : 'none';
   $('pinGLabel').textContent = multi ? 'G1' : 'G';
   if (sliderApi) sliderApi.setMultiGrid(multi);
+  syncPurposeFields();
+}
+
+function syncPurposeFields() {
+  const diode = state.type === 'diode';
+  const purpose = diode ? 'preamp' : ($('loadPurpose')?.value || 'preamp');
+  const show = (id, on) => {
+    const el = $(id);
+    if (el) el.hidden = !on;
+  };
+  show('loadPurposeRow', !diode);
+  show('loadRpRow', !diode ? purpose !== 'output' : true);
+  show('loadRgRow', !diode && purpose === 'preamp');
+  show('loadZpRow', !diode && purpose === 'output');
+  show('loadDcrRow', !diode && purpose === 'output');
+  show('loadZspkRow', !diode && purpose === 'output');
+  show('loadEtaRow', !diode && purpose === 'output');
+  show('loadZhpRow', !diode && purpose === 'headphone');
+  if ($('loadRpHint')) {
+    $('loadRpHint').textContent = purpose === 'headphone'
+      ? 'Plate resistor. Sets the DC line'
+      : 'Plate resistor. Sets the DC line. With no following grid, the AC line matches it';
+  }
 }
 
 function fillModelOptions() {
@@ -1023,12 +1151,22 @@ function restore() {
     for (const [key, id] of Object.entries(map)) {
       if (typeof data.load[key] === 'boolean') $(id).checked = data.load[key];
     }
-    const fields = { rp: 'loadRp', vp: 'loadVp', vg: 'loadVg', vin: 'loadVin', pmax: 'loadPmax', thdMax: 'loadThd', vcMax: 'loadVc', ul: 'ulTap' };
+    const fields = {
+      rp: 'loadRp', vp: 'loadVp', vg: 'loadVg', vin: 'loadVin', pmax: 'loadPmax', thdMax: 'loadThd', vcMax: 'loadVc', ul: 'ulTap',
+      zp: 'loadZp', dcr: 'loadDcr', zhp: 'loadZhp', xfmr: 'loadEta',
+    };
     for (const [key, id] of Object.entries(fields)) {
       if (Number.isFinite(data.load[key])) $(id).value = data.load[key];
     }
     if (data.load.gridLaw === 'child' || data.load.gridLaw === 'diode') {
       $('igMode').value = data.load.gridLaw;
+    }
+    if (data.load.purpose === 'output' || data.load.purpose === 'headphone' || data.load.purpose === 'preamp') {
+      $('loadPurpose').value = data.load.purpose;
+    }
+    if (data.load.rg > 0) $('loadRg').value = data.load.rg;
+    if (data.load.zspk === 4 || data.load.zspk === 8 || data.load.zspk === 16) {
+      $('loadZspk').value = String(data.load.zspk);
     }
     loadPlaced = data.load.userPlaced === true;
   }
@@ -1092,6 +1230,7 @@ function bindUi() {
   for (const id of [
     'vgList', 'vpMax', 'ipMax', 'eg2', 'vpSteps', 'imageOpacity',
     'loadRp', 'loadVp', 'loadVg', 'loadVin', 'loadPmax', 'loadThd', 'loadVc', 'ulTap',
+    'loadRg', 'loadZp', 'loadDcr', 'loadZhp', 'loadEta',
     ...CHILD_KEYS,
   ]) {
     $(id).addEventListener('input', () => {
@@ -1099,7 +1238,7 @@ function bindUi() {
         const n = Number($(id).value);
         if (Number.isFinite(n)) state.params[id] = n;
       }
-      if (['loadRp', 'loadVp', 'loadVg', 'loadVin'].includes(id)) loadPlaced = true;
+      if (['loadRp', 'loadVp', 'loadVg', 'loadVin', 'loadRg', 'loadZp', 'loadDcr', 'loadZhp'].includes(id)) loadPlaced = true;
       if ((id === 'vpMax' || id === 'ipMax') && !loadPointOnPlot()) centerLoadLine();
       scheduleRedraw();
       persist();
@@ -1107,6 +1246,16 @@ function bindUi() {
   }
 
   $('showScreenCurves').addEventListener('change', () => {
+    scheduleRedraw();
+    persist();
+  });
+
+  $('loadPurpose').addEventListener('change', () => {
+    syncPurposeFields();
+    scheduleRedraw();
+    persist();
+  });
+  $('loadZspk').addEventListener('change', () => {
     scheduleRedraw();
     persist();
   });
@@ -1418,18 +1567,30 @@ function onPointerMove(evt) {
   $('cursorReadout').textContent = cursor;
 
   hoverGuide = guideHitAt(local.x, local.y);
-  canvas.style.cursor = hitLoadHandle(local) || drag?.kind === 'vin' || drag?.kind === 'center' ? 'grab' : '';
+  const lineDrag = drag?.kind === 'vin' || drag?.kind === 'center' || drag?.kind === 'ac' || drag?.kind === 'dc';
+  canvas.style.cursor = hitLoadHandle(local) || lineDrag ? 'grab' : '';
 
   if (!drag) return;
 
-  if (drag.kind === 'vin' || drag.kind === 'center') {
+  if (drag.kind === 'vin' || drag.kind === 'center' || drag.kind === 'ac' || drag.kind === 'dc') {
     drag.moved = true;
-    if (!(data.vp > 0) || data.ip < 0) return;
-    if (drag.kind === 'center') placeLoadCenter(data.vp, data.ip);
-    else {
-      tiltLoadLine(data.vp, data.ip);
-      const vin = vinFromPoint(data.vp, data.ip);
+    if (drag.kind === 'center') {
+      if (!(data.vp > 0) || data.ip < 0) return;
+      placeLoadCenter(data.vp, data.ip);
+    } else if (drag.kind === 'vin') {
+      const point = projectOntoLine(local, plot.loadLine) || data;
+      if (!(point.vp > 0)) return;
+      const vin = vinFromPoint(point.vp, Math.max(0, point.ip));
       if (vin != null) $('loadVin').value = vin.toFixed(2);
+    } else {
+      if (!(data.vp > 0) || data.ip < 0) return;
+      const load = readLoadUi();
+      const eg2 = readEg2();
+      const iq = plateAt(state.type === 'diode' ? 0 : load.vg, load.vp, eg2For(load.vp, eg2, load));
+      const r = resistanceThrough(load.vp, iq, data.vp, data.ip);
+      if (r == null) return;
+      if (drag.kind === 'dc') applyDcResistance(r);
+      else applyAcResistance(r);
     }
     loadPlaced = true;
     scheduleRedraw();
@@ -1465,7 +1626,7 @@ function onPointerUp() {
   const layer = drag.layer;
   drag = null;
   canvas.style.cursor = '';
-  if (kind === 'vin' || kind === 'center') {
+  if (kind === 'vin' || kind === 'center' || kind === 'ac' || kind === 'dc') {
     if (moved) flushPersist();
     return;
   }

@@ -195,6 +195,7 @@ export class Plot {
     this.showScreenCurves = true;
     this.screenCurveColor = '#1d4ed8';
     this.loadLine = null;
+    this.dcLine = null;
     this.qPoint = null;
     this.swingPoints = [];
     this.dissip = null;
@@ -613,10 +614,18 @@ export class Plot {
 
   drawLoadLine() {
     const ctx = this.ctx;
+    if (this.dcLine?.length) {
+      ctx.save();
+      ctx.strokeStyle = '#111';
+      ctx.lineWidth = 1.5;
+      this.strokePolyline(this.dcLine.map((pt) => this.dataToPx(pt.vp, pt.ip)));
+      ctx.restore();
+    }
     if (this.loadLine?.length) {
       ctx.save();
       ctx.strokeStyle = '#111';
       ctx.lineWidth = 1.5;
+      if (this.dcLine?.length) ctx.setLineDash([7, 4]);
       this.strokePolyline(this.loadLine.map((pt) => this.dataToPx(pt.vp, pt.ip)));
       ctx.restore();
     }

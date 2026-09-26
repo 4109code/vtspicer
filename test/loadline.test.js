@@ -10,6 +10,11 @@ import {
   loadLineScore,
   optimizeLoadLine,
   swingSamples,
+  resolveStageLoad,
+  deliveredPower,
+  linesCoincide,
+  lineEnds,
+  loadLineCurrent,
 } from '../lib/loadline.js';
 import {
   plateCurrent,
@@ -50,6 +55,62 @@ describe('load line intersection', () => {
     assert.ok(vp < vq);
   });
 });
+
+describe('stage loads', () => {
+  it('keeps a single line when the preamp has no following grid', () => {
+    const stage = resolveStageLoad({ purpose: 'preamp', rp: 100e3 });
+    assert.equal(stage.rdc, 100e3);
+    assert.equal(stage.rac, 100e3);
+    assert.ok(linesCoincide(stage.rdc, stage.rac));
+  });
+
+  it('puts the next grid in parallel on the AC line only', () => {
+    const stage = resolveStageLoad({ purpose: 'preamp', rp: 100e3, rg: 100e3 });
+    close(stage.rdc, 100e3);
+    close(stage.rac, 50e3);
+    const ends = lineEnds(250, 0.002, stage.rac);
+    close(loadLineCurrent(ends[1].vp, 250, 0.002, stage.rac), 0, 1e-9);
+  });
+
+  it('uses primary DCR for DC and Zp for AC, and scales power by efficiency', () => {
+    const stage = resolveStageLoad({ purpose: 'output', rp: 100e3, dcr: 200, zp: 5000, eta: 0.85 });
+    close(stage.rdc, 200);
+    close(stage.rac, 5000);
+    const voutRms = 40 / (2 * Math.SQRT2);
+    close(deliveredPower({ purpose: 'output', voutRms, zLoad: stage.zLoad, eta: stage.eta }), (voutRms ** 2 / 5000) * 0.85);
+  });
+
+  it('puts headphone power in Zhp while the swing sits on Rp parallel to Zhp', () => {
+    const stage = resolveStageLoad({ purpose: 'headphone', rp: 10000, zhp: 300 });
+    close(stage.rdc, 10000);
+    close(stage.rac, parallelCheck(10000, 300));
+    const ipAt = (_vg, vp) => 0.00002 * vp + 0.001 * (_vg + 2);
+    const vp = 150;
+    const vg = -2;
+    const iq = ipAt(vg, vp);
+    const op = analyzeLoadLine({
+      ipAt,
+      vg,
+      vp,
+      rp: stage.rdc,
+      rdc: stage.rdc,
+      rac: stage.rac,
+      purpose: 'headphone',
+      zLoad: stage.zLoad,
+      vin: 1,
+      vpHi: 400,
+    });
+    close(op.vc, vp + stage.rdc * op.ip, 1e-6);
+    const sample = op.samples[6];
+    close(sample.ip, iq + (vp - sample.vp) / stage.rac, 1e-4);
+    const levels = swingLevels(1, op.vpp, op.ipp);
+    close(op.pout, (levels.voutRms ** 2) / 300, 1e-6);
+  });
+});
+
+function parallelCheck(a, b) {
+  return 1 / (1 / a + 1 / b);
+}
 
 describe('output power', () => {
   it('is Vpp times Ipp over 8', () => {

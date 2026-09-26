@@ -110,11 +110,45 @@
       <section>
         <h2>Load line</h2>
         <label class="check load-check"><input type="checkbox" id="showLoadLine" checked /> Show load line <span
-            class="param-hint">Drag the center dot to move the quiescent point</span></label>
-        <div class="load-field">
-          <span class="param-name"><span class="param-key">Rp</span><span class="param-hint">Plate load. Sets the line
-              slope</span></span>
+            class="param-hint">Drag the center dot to move the quiescent point. Drag a line to tilt it. Open dots set Vin</span></label>
+        <label id="loadPurposeRow">Purpose
+          <select id="loadPurpose">
+            <option value="preamp" selected>Preamp</option>
+            <option value="output">SE output</option>
+            <option value="headphone">Headphone</option>
+          </select>
+        </label>
+        <div class="load-field" id="loadRpRow">
+          <span class="param-name"><span class="param-key" id="loadRpKey">Rp</span><span class="param-hint" id="loadRpHint">Plate resistor. Sets the DC line</span></span>
           <input id="loadRp" type="number" value="100000" step="100" />
+        </div>
+        <div class="load-field" id="loadRgRow">
+          <span class="param-name"><span class="param-key">Rg</span><span class="param-hint">Next grid resistor. Blank leaves the AC line on Rp</span></span>
+          <input id="loadRg" type="number" min="0" step="1000" placeholder="open" />
+        </div>
+        <div class="load-field" id="loadZpRow" hidden>
+          <span class="param-name"><span class="param-key">Zp</span><span class="param-hint">Primary impedance. Sets the AC line</span></span>
+          <input id="loadZp" type="number" value="5000" min="1" step="100" />
+        </div>
+        <div class="load-field" id="loadDcrRow" hidden>
+          <span class="param-name"><span class="param-key">DCR</span><span class="param-hint">Primary resistance. Sets the DC line</span></span>
+          <input id="loadDcr" type="number" value="200" min="1" step="10" />
+        </div>
+        <div class="load-field" id="loadZspkRow" hidden>
+          <span class="param-name"><span class="param-key">Zspk</span><span class="param-hint">Speaker tap</span></span>
+          <select id="loadZspk">
+            <option value="4">4 Ω</option>
+            <option value="8" selected>8 Ω</option>
+            <option value="16">16 Ω</option>
+          </select>
+        </div>
+        <div class="load-field" id="loadEtaRow" hidden>
+          <span class="param-name"><span class="param-key">Eta</span><span class="param-hint">Transformer efficiency. Scales power into the speaker</span></span>
+          <input id="loadEta" type="number" value="1" min="0" max="1" step="0.01" />
+        </div>
+        <div class="load-field" id="loadZhpRow" hidden>
+          <span class="param-name"><span class="param-key">Zhp</span><span class="param-hint">Headphone impedance. Parallels Rp on the AC line</span></span>
+          <input id="loadZhp" type="number" value="300" min="1" step="1" />
         </div>
         <div class="load-field">
           <span class="param-name"><span class="param-key">Vp</span><span class="param-hint">Quiescent plate

@@ -111,6 +111,21 @@ describe('stage loads', () => {
   });
 });
 
+describe('unbypassed cathode', () => {
+  it('lowers second harmonic and gain versus a bypassed cathode', () => {
+    const mu = 20;
+    const ipAt = (vg, vp) => {
+      const u = vg + vp / mu + 6;
+      return u > 0 ? 0.00015 * u * u : 0;
+    };
+    const common = { ipAt, vg: -2, vp: 200, rp: 20000, vin: 1.2, vpHi: 800 };
+    const bypassed = analyzeLoadLine({ ...common, bypassed: true });
+    const open = analyzeLoadLine({ ...common, bypassed: false });
+    assert.ok(open.h2 < bypassed.h2 * 0.9, `bypassed ${bypassed.h2} open ${open.h2}`);
+    assert.ok(open.av > 0 && open.av < bypassed.av, `open ${open.av} bypassed ${bypassed.av}`);
+  });
+});
+
 describe('cathode follower', () => {
   it('matches the cathode gain and the impedance looking into the cathode', () => {
     close(followerGain(20, 2000, 200), (20 * 200) / (2000 + 21 * 200));

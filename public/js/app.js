@@ -231,6 +231,7 @@ function readLoadUi() {
     showSum: $('showSum').checked,
     ulOn: $('ulOn').checked,
     ul: Math.min(1, Math.max(0, num('ulTap', 0.43))),
+    bypassed: $('loadBypass') ? $('loadBypass').checked : true,
     purpose: stage.purpose,
     rg: Math.max(0, num('loadRg', 0)),
     zp: Math.max(0, num('loadZp', 5000)),
@@ -621,6 +622,7 @@ function redraw() {
       topology: load.topology,
       eta: load.xfmr,
       zLoad: load.zLoad,
+      bypassed: load.bypassed,
       vin: diode ? 0 : load.vin,
       eg2,
       ul: isMultiGrid() && load.ulOn ? load.ul : 0,
@@ -725,7 +727,11 @@ function updateLoadResults(op, load, diode) {
     rows.push(loadMetric(
       'Av',
       fmtFix(op.av, 2),
-      follower ? 'Cathode gain into Rk parallel to the phones' : 'Voltage gain into the AC load',
+      follower
+        ? 'Cathode gain into Rk parallel to the phones'
+        : load.bypassed
+          ? 'Voltage gain into the AC load'
+          : 'Voltage gain with Rk left in the signal path',
     ));
     if (!follower && !linesCoincide(op.rdc, op.rac)) {
       rows.push(loadMetric('Rdc', fmtOhm(op.rdc), 'DC load through the supply'));
@@ -974,6 +980,7 @@ function syncPurposeFields() {
   show('loadEtaRow', !diode && purpose === 'output');
   show('loadZhpRow', !diode && purpose === 'headphone');
   show('loadHpTopoRow', !diode && purpose === 'headphone');
+  show('loadBypassRow', !diode && !(purpose === 'headphone' && $('loadHpTopo')?.value === 'follower'));
   show('loadRpRow', diode || (purpose !== 'output' && !(purpose === 'headphone' && $('loadHpTopo')?.value === 'follower')));
   if ($('loadZhpHint')) {
     $('loadZhpHint').textContent = $('loadHpTopo')?.value === 'follower'
@@ -1179,6 +1186,7 @@ function restore() {
       showIg: 'showIg',
       showSum: 'showSum',
       ulOn: 'ulOn',
+      bypassed: 'loadBypass',
     };
     for (const [key, id] of Object.entries(map)) {
       if (typeof data.load[key] === 'boolean') $(id).checked = data.load[key];
@@ -1312,7 +1320,7 @@ function bindUi() {
     $('loadZhpPreset').value = [32, 80, 300, 600].includes(z) ? String(z) : 'custom';
   });
 
-  for (const id of ['showLoadLine', 'showPmax', 'showIg', 'showSum', 'ulOn', 'igMode']) {
+  for (const id of ['showLoadLine', 'showPmax', 'showIg', 'showSum', 'ulOn', 'igMode', 'loadBypass']) {
     $(id).addEventListener('change', () => {
       if (id === 'igMode' && $('igMode').value === 'child') {
         state.params = { ...CHILD_DEFAULTS, ...state.params, gridLaw: 'child' };

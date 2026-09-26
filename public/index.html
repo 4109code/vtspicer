@@ -97,6 +97,33 @@
         </p>
         <div id="paramSliders"></div>
       </section>
+
+      <section>
+        <h2>Capacitances / RGI</h2>
+        <div class="grid2">
+          <label id="capCCG">CCG (pF) <input id="CCG" type="number" value="2.3" step="0.1" /></label>
+          <label id="capCGP">CGP (pF) <input id="CGP" type="number" value="2.4" step="0.1" /></label>
+          <label id="capCCP"><span id="capCCPLabel">CCP (pF)</span> <input id="CCP" type="number" value="0.9"
+              step="0.1" /></label>
+          <label id="capRGI">RGI (Ω) <input id="RGI" type="number" value="2000" step="100" /></label>
+        </div>
+      </section>
+      <section>
+        <h2>SPICE .SUBCKT</h2>
+        <div class="pin-line" id="pinLine">
+          <label id="pinAWrap">A <input id="pinA" type="text" value="A" spellcheck="false" /></label>
+          <label id="pinKWrap">K <input id="pinK" type="text" value="K" spellcheck="false" /></label>
+          <label id="pinPWrap">P <input id="pinP" type="text" value="1" spellcheck="false" /></label>
+          <label id="pinGWrap"><span id="pinGLabel">G</span> <input id="pinG" type="text" value="2" spellcheck="false" /></label>
+          <label id="pinCWrap">C <input id="pinC" type="text" value="3" spellcheck="false" /></label>
+          <label id="pinG2Wrap">G2 <input id="pinG2" type="text" value="4" spellcheck="false" /></label>
+        </div>
+        <div class="row">
+          <button type="button" id="btnCopy" class="primary">Copy</button>
+          <button type="button" id="btnDownload">Download .lib</button>
+        </div>
+        <textarea id="spiceOut" spellcheck="false" readonly></textarea>
+      </section>
     </aside>
 
     <section class="canvas-wrap" id="canvasWrap">
@@ -313,32 +340,6 @@
         <div class="row">
           <button type="button" id="btnApplyParts">Apply series values</button>
         </div>
-      </section>
-      <section>
-        <h2>Capacitances / RGI</h2>
-        <div class="grid2">
-          <label id="capCCG">CCG (pF) <input id="CCG" type="number" value="2.3" step="0.1" /></label>
-          <label id="capCGP">CGP (pF) <input id="CGP" type="number" value="2.4" step="0.1" /></label>
-          <label id="capCCP"><span id="capCCPLabel">CCP (pF)</span> <input id="CCP" type="number" value="0.9"
-              step="0.1" /></label>
-          <label id="capRGI">RGI (Ω) <input id="RGI" type="number" value="2000" step="100" /></label>
-        </div>
-      </section>
-      <section>
-        <h2>SPICE .SUBCKT</h2>
-        <div class="pin-line" id="pinLine">
-          <label id="pinAWrap">A <input id="pinA" type="text" value="A" spellcheck="false" /></label>
-          <label id="pinKWrap">K <input id="pinK" type="text" value="K" spellcheck="false" /></label>
-          <label id="pinPWrap">P <input id="pinP" type="text" value="1" spellcheck="false" /></label>
-          <label id="pinGWrap"><span id="pinGLabel">G</span> <input id="pinG" type="text" value="2" spellcheck="false" /></label>
-          <label id="pinCWrap">C <input id="pinC" type="text" value="3" spellcheck="false" /></label>
-          <label id="pinG2Wrap">G2 <input id="pinG2" type="text" value="4" spellcheck="false" /></label>
-        </div>
-        <div class="row">
-          <button type="button" id="btnCopy" class="primary">Copy</button>
-          <button type="button" id="btnDownload">Download .lib</button>
-        </div>
-        <textarea id="spiceOut" spellcheck="false" readonly></textarea>
       </section>
     </aside>
   </main>

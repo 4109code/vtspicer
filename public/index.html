@@ -261,6 +261,26 @@
         <p id="harmHint" class="param-hint harm-hint">H2–H5 from 10% drive up to Vin</p>
         <canvas id="harmPlot" width="280" height="110"></canvas>
       </section>
+      <section id="stagePartsSection">
+        <h2>Parts</h2>
+        <div class="grid2">
+          <div class="load-field">
+            <span class="param-name"><span class="param-key">f3</span><span class="param-hint">Low corner used to size Ck and the coupling cap</span></span>
+            <input id="partF" type="number" value="10" min="1" step="1" />
+          </div>
+          <div class="load-field">
+            <span class="param-name"><span class="param-key">Series</span><span class="param-hint">Preferred resistor and capacitor values</span></span>
+            <select id="partSeries">
+              <option value="E24" selected>E24</option>
+              <option value="E12">E12</option>
+            </select>
+          </div>
+        </div>
+        <div id="stageParts" class="load-results"></div>
+        <div class="row">
+          <button type="button" id="btnApplyParts">Apply series values</button>
+        </div>
+      </section>
       <section>
         <h2>Capacitances / RGI</h2>
         <div class="grid2">

@@ -40,6 +40,7 @@ import {
   optimizeLoadLine,
 } from '/lib/loadline.js';
 import { CHILD_DEFAULTS, CHILD_KEYS, PIN_ORDER, childLawIg, gridCurrent } from '/lib/models/math.js';
+import { stageParts } from '/lib/stage.js';
 
 const STORAGE_KEY = 'koren-tube-modeler-v2';
 
@@ -635,6 +636,8 @@ function redraw() {
     loadKey = nextLoadKey;
     updateLoadResults(op, load, diode);
     drawHarmonics(op.sweep);
+  } else {
+    updateStageParts(op, load, diode);
   }
   const ipMax = plot.calib.ipMax;
   if (load.show && load.topology === 'follower') {
@@ -771,6 +774,58 @@ function updateLoadResults(op, load, diode) {
   }
   box.replaceChildren(...rows);
   $('harmHint').style.display = diode ? 'none' : '';
+  updateStageParts(op, load, diode);
+}
+
+function fmtFarad(c) {
+  if (!(c > 0) || !Number.isFinite(c)) return '—';
+  if (c >= 1e-6) return `${(c * 1e6).toFixed(2)} µF`;
+  if (c >= 1e-9) return `${(c * 1e9).toFixed(1)} nF`;
+  return `${(c * 1e12).toFixed(0)} pF`;
+}
+
+function updateStageParts(op, load, diode) {
+  const box = $('stageParts');
+  const section = $('stagePartsSection');
+  if (!box || !section) return;
+  section.hidden = diode;
+  if (diode) {
+    box.replaceChildren();
+    return;
+  }
+  const fLow = Math.max(1, Number($('partF').value) || 10);
+  const series = $('partSeries').value === 'E12' ? 'E12' : 'E24';
+  const rows = stageParts(load, op, { series, fLow }).map((part) => {
+    let value = '—';
+    if (part.kind === 'V') value = fmtFix(part.value, 1, ' V');
+    else if (part.kind === 'C') value = fmtFarad(part.snapped);
+    else value = fmtOhm(part.snapped);
+    if (part.wattage) value += `, ${part.wattage} W`;
+    const hint = part.kind === 'R' && part.dissipation > 0
+      ? `Dissipates ${part.dissipation.toFixed(2)} W`
+      : part.kind === 'C'
+        ? `Sized for ${fLow} Hz`
+        : part.key === 'Rs'
+          ? 'Grid stopper'
+          : '';
+    return loadMetric(part.key, value, hint);
+  });
+  box.replaceChildren(...rows);
+}
+
+function applySeriesParts() {
+  if (!lastOp) return;
+  const load = readLoadUi();
+  const fLow = Math.max(1, Number($('partF').value) || 10);
+  const series = $('partSeries').value === 'E12' ? 'E12' : 'E24';
+  for (const part of stageParts(load, lastOp, { series, fLow })) {
+    if (!(part.snapped > 0) || !part.field) continue;
+    if (part.field === 'vg') $('loadVg').value = (-lastOp.ip * part.snapped).toFixed(2);
+    else $(part.field).value = String(part.snapped);
+  }
+  loadPlaced = true;
+  scheduleRedraw();
+  persist();
 }
 
 function drawHarmonics(sweep) {
@@ -1112,6 +1167,10 @@ function writePersist() {
       showScreenCurves: $('showScreenCurves').checked,
       load: { ...readLoadUi(), userPlaced: loadPlaced },
       child: Object.fromEntries(CHILD_KEYS.map((key) => [key, Number($(key).value)])),
+      parts: {
+        f: Number($('partF').value) || 10,
+        series: $('partSeries').value === 'E12' ? 'E12' : 'E24',
+      },
       guides: state.guides,
       screenGuides: state.screenGuides,
       pins: {
@@ -1168,6 +1227,10 @@ function restore() {
     }
     state.params = { ...defaultParams(state.modelId, state.type), ...saved };
     writeCaps(state.params);
+  }
+  if (data.parts) {
+    if (Number(data.parts.f) > 0) $('partF').value = data.parts.f;
+    if (data.parts.series === 'E12' || data.parts.series === 'E24') $('partSeries').value = data.parts.series;
   }
   if (data.vgList) $('vgList').value = data.vgList;
   if (data.vpMax) $('vpMax').value = data.vpMax;
@@ -1319,6 +1382,14 @@ function bindUi() {
     const z = Number($('loadZhp').value);
     $('loadZhpPreset').value = [32, 80, 300, 600].includes(z) ? String(z) : 'custom';
   });
+  $('partF').addEventListener('input', () => {
+    scheduleRedraw();
+    persist();
+  });
+  $('partSeries').addEventListener('change', () => {
+    scheduleRedraw();
+    persist();
+  });
 
   for (const id of ['showLoadLine', 'showPmax', 'showIg', 'showSum', 'ulOn', 'igMode', 'loadBypass']) {
     $(id).addEventListener('change', () => {
@@ -1353,6 +1424,7 @@ function bindUi() {
     resetSavedSession();
   });
   $('btnBestLoad').addEventListener('click', () => applyBestLoadLine());
+  $('btnApplyParts').addEventListener('click', () => applySeriesParts());
 
   $('btnFitGuides').addEventListener('click', () => runGuideFit());
   $('btnUndoGuide').addEventListener('click', () => undoActiveGuide());
